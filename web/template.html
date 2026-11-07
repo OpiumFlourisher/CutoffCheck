@@ -1,0 +1,597 @@
+<title>CutoffCheck</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<style>
+/* my css */
+* { box-sizing: border-box; }
+:root { color-scheme: light; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  background-color: #eef2f8;
+  color: #2f3340;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 10px 30px;
+}
+main { max-width: 720px; margin: 0 auto; }
+
+/* header */
+.top { display: flex; align-items: center; gap: 12px; margin: 12px 0 6px 0; }
+.logo { flex: none; width: 46px; height: 46px; }
+h1 { color: #0066cc; margin: 0; font-size: 28px; line-height: 1.1; }
+.h-or { color: #e8590c; }
+.ver { font-size: 12px; font-weight: normal; color: #0066cc; border: 1px solid #0066cc; border-radius: 10px; padding: 1px 7px; vertical-align: middle; position: relative; top: -3px; }
+.subtitle { color: #555555; margin: 6px 0 0 0; font-size: 15px; line-height: 1.45; }
+.hl { background: linear-gradient(transparent 55%, #fff27a 55%); padding: 0 2px; }
+hr { border: 0; border-top: 2px dashed #cccccc; margin: 18px 0; }
+
+/* sticky note */
+.note {
+  font-family: "Patrick Hand", "Comic Sans MS", "Chalkboard SE", cursive;
+  font-size: 19px; line-height: 1.25; color: #3b3b3b;
+  background-color: #fff7a8; padding: 10px 14px 12px 14px; margin: 16px 6px 4px 6px;
+  box-shadow: 2px 3px 6px rgba(0,0,0,0.18); transform: rotate(-1.2deg);
+  max-width: 420px;
+}
+.note b { font-weight: normal; text-decoration: underline; text-decoration-thickness: 2px; }
+
+.loader {
+  background-color: #f4f8ff;
+  border: 2px dashed #7aa7e0;
+  border-radius: 5px;
+  padding: 15px;
+  text-align: center;
+}
+.loader.drag { border-color: #007bff; background-color: #eef5ff; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 20px;
+  font-size: 16px;
+  min-height: 46px;
+  cursor: pointer;
+}
+.btn:hover { background-color: #0056b3; }
+.btn.ghost { background-color: #6c757d; }
+.btn.ghost:hover { background-color: #545b62; }
+.btn:disabled { background-color: #aaaaaa; }
+.btn:focus-visible, summary:focus-visible { outline: 3px solid #ffbf00; }
+.hint { color: #777777; font-size: 14px; }
+.progress { height: 14px; background-color: #dddddd; border: 1px solid #bbbbbb; margin: 10px 0; }
+.progress > i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(45deg, #2fb36b 0 10px, #43c97f 10px 20px); }
+.status { font-style: italic; color: #555555; font-size: 14px; overflow-wrap: anywhere; }
+
+.summary { margin: 15px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 7px;
+  border-radius: 3px;
+  color: white;
+}
+.chip.ok { background-color: #28a745; }
+.chip.warn { background-color: #e0a800; color: black; }
+.chip.bad { background-color: #dc3545; }
+.chip.idle { background-color: #6c757d; }
+
+.list { display: flex; flex-direction: column; gap: 10px; }
+.strip { background-color: white; border: 1px solid #cccccc; border-left-width: 6px; border-radius: 5px; }
+.strip[data-state="ok"] { border-color: #28a745; background-color: #f1fbf4; }
+.strip[data-state="warn"] { border-color: #e0a800; background-color: #fffaeb; }
+.strip[data-state="bad"] { border-color: #dc3545; background-color: #fff3f4; }
+.strip summary { cursor: pointer; padding: 10px; }
+.strip .name { display: inline; font-weight: bold; overflow-wrap: anywhere; }
+.strip .meta { margin-top: 6px; font-size: 13px; color: #555555; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.example-tag { background-color: yellow; color: black; font-size: 12px; padding: 1px 4px; }
+
+.detail { padding: 0 10px 10px 10px; }
+.scope { background-color: black; padding: 5px; }
+.scope canvas { display: block; width: 100%; height: auto; max-width: 100%; cursor: pointer; }
+.scope-in { position: relative; }
+.playhead { position: absolute; width: 2px; background-color: white; box-shadow: 0 0 4px black; pointer-events: none; }
+.player { display: block; width: 100%; margin-bottom: 8px; }
+.play-btn {
+  background-color: #28a745; color: white; border: none; border-radius: 4px;
+  font-size: 14px; font-weight: bold; padding: 6px 12px; min-height: 34px; cursor: pointer;
+}
+.play-btn:hover { background-color: #1e7e34; }
+.play-btn.playing { background-color: #fd7e14; }
+.play-error { color: #dc3545; font-size: 14px; }
+.facts { margin: 10px 0; }
+.facts div { margin-bottom: 4px; }
+.facts dt { display: inline; font-weight: bold; }
+.facts dt::after { content: ": "; }
+.facts dd { display: inline; margin: 0; overflow-wrap: anywhere; }
+.notes { margin: 5px 0 0 0; font-size: 14px; color: #444444; }
+
+.legend { background-color: white; border: 1px solid #cccccc; border-top: 5px solid #0066cc; padding: 10px; margin-top: 20px; }
+.legend h2 { font-size: 18px; margin: 0 0 10px 0; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { border: 1px solid #bbbbbb; padding: 6px; text-align: left; vertical-align: top; }
+th { background-color: #dde9fb; color: #1f3d66; }
+
+.sec-title { margin: 18px 0 10px 0; display: inline-block; border-bottom: 4px solid #e8590c; padding-bottom: 2px; }
+.box { background-color: white; border: 1px solid #cccccc; padding: 10px 12px; margin-top: 16px; }
+.box h2 { font-size: 18px; margin: 0 0 8px 0; }
+.box.faq { border-top: 5px solid #12a39a; }
+.box.faq h2 { color: #0c7f78; }
+.box.issues-box { border-top: 5px solid #f08c00; }
+.box.issues-box h2 { color: #c26c00; }
+.box.disclaimer { border-top: 5px solid #6b7280; background-color: #f8f9fb; }
+.box.disclaimer h2 { color: #4b5563; }
+.box.disclaimer .issues { font-size: 13px; color: #555555; }
+.faq details { border-top: 1px solid #e3e3e3; padding: 8px 0; }
+.faq details:first-of-type { border-top: 0; }
+.faq summary { cursor: pointer; font-weight: bold; font-size: 15px; }
+.faq summary::marker { color: #12a39a; }
+.faq p { margin: 6px 0 2px 18px; font-size: 14px; color: #444444; line-height: 1.45; }
+.issues { margin: 0; padding-left: 18px; font-size: 14px; color: #444444; line-height: 1.5; }
+
+footer { text-align: center; font-size: 13px; color: #6b7280; margin-top: 22px; line-height: 1.6; }
+footer::before { content: ""; display: block; height: 4px; margin: 0 auto 10px auto; width: 120px; border-radius: 2px;
+  background: linear-gradient(90deg, #7b2cbf, #f72585, #ff6d00, #ffd60a); }
+</style>
+
+<main>
+  <div class="top">
+    <svg class="logo" viewBox="0 0 46 46" aria-hidden="true">
+      <rect x="1.5" y="1.5" width="43" height="43" rx="7" fill="#1d1b3a"/>
+      <g stroke-width="3" stroke-linecap="round">
+        <line x1="9" y1="21" x2="9" y2="25" stroke="#7b2cbf"/><line x1="14" y1="15" x2="14" y2="31" stroke="#b5179e"/>
+        <line x1="19" y1="10" x2="19" y2="36" stroke="#f72585"/><line x1="24" y1="17" x2="24" y2="29" stroke="#ff6d00"/>
+        <line x1="29" y1="12" x2="29" y2="34" stroke="#ff9e00"/><line x1="34" y1="19" x2="34" y2="27" stroke="#ffd60a"/>
+        <line x1="38.5" y1="22" x2="38.5" y2="24" stroke="#fff3b0"/>
+      </g>
+    </svg>
+    <h1>Cutoff<span class="h-or">Check</span> <span class="ver">v1.2</span></h1>
+  </div>
+  <p class="subtitle">I kept downloading "lossless" albums that turned out to be MP3s with a .flac name, so I made this. It checks if a FLAC is really lossless, fake hi-res or a converted MP3/AAC. <span class="hl">Everything stays on your phone, nothing gets uploaded.</span></p>
+
+  <div class="note">tip: in Chrome tap &#8942; &rarr; <b>Add to Home screen</b> and it opens like a normal app :)</div>
+  <hr>
+
+  <div class="loader" id="loader">
+    <div class="row">
+      <button class="btn" id="pick" type="button">Choose FLAC files</button>
+      <button class="btn ghost" id="clear" type="button" hidden>Clear results</button>
+      <input id="file" type="file" accept=".flac,audio/flac,audio/x-flac" multiple hidden>
+    </div>
+    <p class="hint">You can pick lots of songs at once. Each one takes about 5–15 seconds on a phone. Tap &#9654; Play to listen, and tap the spectrogram to jump to that spot.</p>
+    <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+    <div class="status" id="status" role="status">Showing an example result. Choose files to check your own.</div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+  <h3 class="sec-title">Results</h3>
+  <div class="list" id="list"></div>
+
+  <div class="legend">
+    <h2>What do the results mean?</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Result</th><th>Meaning</th></tr>
+        <tr><td><span class="chip ok">Genuine</span></td><td>Full frequency range, no lossy cutoff. Real lossless audio.</td></tr>
+        <tr><td><span class="chip warn">Fake hi-res</span></td><td>Says 88.2/96 kHz but the audio is really 44.1/48 kHz. Still lossless, sounds the same, just a bigger file.</td></tr>
+        <tr><td><span class="chip warn">Fake 24-bit</span></td><td>16-bit audio padded to 24-bit. Still lossless.</td></tr>
+        <tr><td><span class="chip warn">Suspicious</span></td><td>Not sure. Look at the spectrogram: a flat wall is bad, a slow fade is fine.</td></tr>
+        <tr><td><span class="chip bad">Lossy</span></td><td>An MP3, AAC or Vorbis encoder fingerprint was found, or a sharp cutoff from MP3/AAC/Opus. This is a fake FLAC, even at 320 kbps!</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="box faq">
+    <h2>FAQ</h2>
+    <details>
+      <summary>How can it tell a 320 kbps MP3 from real lossless?</summary>
+      <p>MP3, AAC and Vorbis encoders save the sound in fixed-size blocks, and lots of values inside those blocks end up exactly zero. Those zeros are still there after converting to FLAC. The app redoes each encoder's maths at every possible block position, and if one position shows a big pile of zeros all through the song, it went through that encoder. Real lossless audio never has a position like that.</p>
+    </details>
+    <details>
+      <summary>Is "fake hi-res" bad?</summary>
+      <p>Not for listening. It's real lossless audio at CD quality that someone upsampled to 96 kHz, so it sounds the same and just takes twice the space.</p>
+    </details>
+    <details>
+      <summary>Why is it slow?</summary>
+      <p>It decodes the whole song and runs a few thousand transforms on it, all on your phone. That's the price of not uploading anything.</p>
+    </details>
+    <details>
+      <summary>Does it work offline?</summary>
+      <p>Once the page has loaded, yes. Your songs never leave the phone either way.</p>
+    </details>
+  </div>
+
+  <div class="box issues-box">
+    <h2>Known issues</h2>
+    <ul class="issues">
+      <li>If a lossy file was resampled after converting (like an MP3 made into fake 96 kHz), only the cutoff check can catch it.</li>
+      <li>Very quiet or very sparse recordings, and songs that clip constantly, can hide the encoder pattern.</li>
+      <li>WMA, AC-3 and other rare codecs are only caught if they leave a cutoff.</li>
+      <li>Big 96 kHz files use a lot of memory on older phones. Check them a few at a time.</li>
+    </ul>
+  </div>
+
+  <div class="box disclaimer">
+    <h2>Disclaimer</h2>
+    <ul class="issues">
+      <li>This tool only looks at audio quality. It doesn't check where a file came from or whether you're allowed to have it.</li>
+      <li>Not affiliated with any music store, streaming service or codec maker. All names are used only to describe file formats.</li>
+      <li>Your files are read on your own device and are never uploaded or stored anywhere.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>CutoffCheck v1.2 &middot; works best in Chrome on Android</p>
+  </footer>
+</main>
+
+<script id="analysis-src">/*__ANALYSIS__*/</script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const list = $("list"), statusEl = $("status"), bar = $("bar");
+
+  // ---------- worker built from the inline analysis module ----------
+  const workerSrc = $("analysis-src").textContent + `
+    self.onmessage = (e) => {
+      const { id, sr, bits, channels } = e.data;
+      try {
+        const r = FlacAnalysis.analyse({ sr, bits, channels,
+          onProgress: (p) => self.postMessage({ id, progress: p }) });
+        const buffers = r.display.map((row) => row.buffer).concat([r.profile.buffer, r.freqs.buffer]);
+        self.postMessage({ id, result: r }, buffers);
+      } catch (err) { self.postMessage({ id, error: String(err && err.message || err) }); }
+    };`;
+  let worker = null;
+  try { worker = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: "text/javascript" }))); }
+  catch (e) { worker = null; }
+  const pending = new Map();
+  let nextId = 1;
+  if (worker) worker.onmessage = (e) => {
+    const job = pending.get(e.data.id); if (!job) return;
+    if ("progress" in e.data) { job.onProgress && job.onProgress(e.data.progress); return; }
+    pending.delete(e.data.id);
+    e.data.error ? job.reject(new Error(e.data.error)) : job.resolve(e.data.result);
+  };
+  function runAnalysis(sr, bits, channels, onProgress) {
+    if (!worker) {                                  // fallback: main thread
+      return new Promise((res, rej) => setTimeout(() => {
+        try { res(window.FlacAnalysis.analyse({ sr, bits, channels })); } catch (err) { rej(err); }
+      }, 20));
+    }
+    return new Promise((resolve, reject) => {
+      const id = nextId++;
+      pending.set(id, { resolve, reject, onProgress });
+      worker.postMessage({ id, sr, bits, channels }, channels.map((c) => c.buffer));
+    });
+  }
+
+  // ---------- verdict → state ----------
+  function stateOf(v) {
+    if (/^LOSSY/.test(v)) return "bad";
+    if (/^ERROR/.test(v)) return "bad";
+    if (/SUSPICIOUS|FAKE/.test(v)) return "warn";
+    return "ok";
+  }
+  function chipsFor(r) {
+    return r.flags.map((f) => {
+      const s = /^LOSSY/.test(f) ? "bad" : /^GENUINE/.test(f) ? "ok" : "warn";
+      const label = f.replace("LOSSY TRANSCODE", r.codec ? `Lossy · ${r.codec} (fake FLAC)` : "Lossy (fake FLAC)").replace("GENUINE LOSSLESS", "Genuine lossless")
+        .replace("GENUINE HI-RES", "Genuine hi-res").replace("SUSPICIOUS", "Suspicious")
+        .replace(/FAKE HI-RES \(upsampled from (.*)\)/, "Fake hi-res · from $1").replace("FAKE 24-BIT (padded 16-bit)", "Fake 24-bit");
+      return `<span class="chip ${s}">${label}</span>`;
+    }).join("");
+  }
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+
+  // ---------- strip rendering ----------
+  function addStrip(name, isExample) {
+    const d = document.createElement("details");
+    d.className = "strip"; d.dataset.state = "idle";
+    d.innerHTML = `<summary><div class="name">${esc(name)}</div>
+      <div class="meta"><span class="chip idle">Waiting</span></div></summary><div class="detail"></div>`;
+    if (isExample) d.dataset.example = "1";
+    list.appendChild(d);
+    return d;
+  }
+  function fillStrip(d, r, name, isExample, src) {
+    d.dataset.state = stateOf(r.verdict);
+    const fmt = `${r.sr / 1000} kHz · ${r.bits}-bit`;
+    d.querySelector("summary").innerHTML = `
+      <div class="name">${isExample ? '<span class="example-tag">Example</span> ' : ""}${esc(name)}</div>
+      <div class="meta">${src ? '<button class="play-btn" type="button">&#9654; Play</button>' : ""}${chipsFor(r)}<span>${fmt}</span><span>cutoff ${r.cutoffKhz} kHz</span></div>`;
+    const det = d.querySelector(".detail");
+    const notes = r.notes.length ? `<ul class="notes">${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : "";
+    det.innerHTML = `
+      ${src ? '<audio class="player" controls preload="none"></audio><p class="play-error" hidden>This browser can\'t play this file.</p>' : ""}
+      <div class="scope"><div class="scope-in"><canvas width="900" height="480" aria-label="Spectrogram of ${esc(name)}"></canvas><div class="playhead" hidden></div></div></div>
+      <dl class="facts">
+        <div><dt>Format</dt><dd>${fmt}</dd></div>
+        <div><dt>Bits actually used</dt><dd>${r.effBits}</dd></div>
+        <div><dt>Content ends at</dt><dd>${r.cutoffKhz} kHz</dd></div>
+        <div><dt>Cutoff sharpness</dt><dd>${r.wallDb} dB ${r.wallDb >= 60 ? "(brick wall)" : r.wallDb >= 25 ? "(sharp)" : "(natural)"}</dd></div>
+        <div><dt>Length</dt><dd>${fmtTime(r.duration)}</dd></div>
+        ${r.sr <= 48000 ? `<div><dt>Encoder fingerprint</dt><dd>${r.codec ? esc(r.codec) + " found (" + esc(r.codecConf) + ")" : "none found"}</dd></div>` : ""}
+        ${r.lossyGuess ? `<div><dt>Looks like</dt><dd>${esc(r.lossyGuess)}</dd></div>` : ""}
+      </dl>${notes}`;
+    const cv = det.querySelector("canvas");
+    const draw = () => drawScope(cv, r);
+    if (d.open) draw();
+    d.addEventListener("toggle", () => { if (d.open) draw(); });
+    if (src) setupPlayer(d, r, src, cv);
+  }
+
+  // ---------- playback ----------
+  const objectUrls = [];
+  function setupPlayer(d, r, src, cv) {
+    const audio = d.querySelector("audio"), btn = d.querySelector(".play-btn");
+    const line = d.querySelector(".playhead"), err = d.querySelector(".play-error");
+    const g = scopeGeom(cv.width, cv.height);
+    line.style.top = (g.T / g.H * 100) + "%";
+    line.style.height = (g.plotH / g.H * 100) + "%";
+    let loaded = false;
+    const load = () => {
+      if (loaded) return; loaded = true;
+      const url = URL.createObjectURL(src); objectUrls.push(url); audio.src = url;
+    };
+    const dur = () => (isFinite(audio.duration) && audio.duration > 0 ? audio.duration : r.duration);
+    const place = () => {
+      const f = Math.min(1, Math.max(0, audio.currentTime / dur()));
+      line.style.left = ((g.L + f * g.specW) / g.W * 100) + "%";
+      line.hidden = audio.currentTime === 0 && audio.paused;
+    };
+    const tick = () => { place(); if (!audio.paused) requestAnimationFrame(tick); };
+    const playPause = () => {
+      load();
+      if (audio.paused) audio.play().catch(() => {}); else audio.pause();
+    };
+    btn.addEventListener("click", (e) => {        // inside <summary>: don't toggle the box
+      e.preventDefault(); e.stopPropagation();
+      if (!d.open) d.open = true;
+      playPause();
+    });
+    d.addEventListener("toggle", () => { if (d.open) load(); });
+    audio.addEventListener("play", () => {
+      document.querySelectorAll("audio").forEach((a) => { if (a !== audio) a.pause(); });
+      btn.innerHTML = "&#10074;&#10074; Pause"; btn.classList.add("playing"); tick();
+    });
+    const stopped = () => { btn.innerHTML = "&#9654; Play"; btn.classList.remove("playing"); place(); };
+    audio.addEventListener("pause", stopped);
+    audio.addEventListener("ended", stopped);
+    audio.addEventListener("seeked", place);
+    audio.addEventListener("error", () => { if (loaded) { err.hidden = false; btn.disabled = true; } });
+    cv.addEventListener("click", (e) => {          // tap the spectrogram to jump there
+      const box = cv.getBoundingClientRect();
+      const x = (e.clientX - box.left) / box.width * g.W;
+      if (x < g.L || x > g.L + g.specW) return;
+      const t = (x - g.L) / g.specW;
+      load();
+      const go = () => { audio.currentTime = t * dur(); place(); if (audio.paused) audio.play().catch(() => {}); };
+      if (audio.readyState >= 1) go(); else audio.addEventListener("loadedmetadata", go, { once: true });
+    });
+  }
+  function stopAllAudio() { document.querySelectorAll("audio").forEach((a) => a.pause()); }
+  function failStrip(d, name, msg) {
+    d.dataset.state = "bad";
+    d.querySelector("summary").innerHTML = `<div class="name">${esc(name)}</div>
+      <div class="meta"><span class="chip bad">Couldn't read</span></div>`;
+    d.querySelector(".detail").innerHTML = `<p class="hint">${esc(msg)}</p>`;
+  }
+
+  // ---------- spectrogram canvas ----------
+  const STOPS = [[0,0,4],[40,11,84],[101,21,110],[159,42,99],[212,72,66],[245,125,21],[250,193,39],[252,255,164]];
+  const LUT = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255 * (STOPS.length - 1), k = Math.min(STOPS.length - 2, Math.floor(t)), f = t - k;
+    for (let c = 0; c < 3; c++) LUT[i * 3 + c] = STOPS[k][c] + (STOPS[k + 1][c] - STOPS[k][c]) * f;
+  }
+  function scopeGeom(W, H) {
+    const L = 78, B = 46, T = 12, gap = 16;
+    const profW = Math.round((W - L) * 0.22), specW = W - L - profW - gap - 8, plotH = H - B - T;
+    return { W, H, L, B, T, gap, profW, specW, plotH };
+  }
+  function drawScope(cv, r) {
+    const W = cv.width, H = cv.height, ctx = cv.getContext("2d");
+    const { L, B, T, gap, profW, specW, plotH } = scopeGeom(W, H);
+    ctx.fillStyle = "#08070b"; ctx.fillRect(0, 0, W, H);
+    // spectrogram
+    const rows = r.display, nb = rows[0].length;
+    const img = ctx.createImageData(specW, plotH);
+    for (let x = 0; x < specW; x++) {
+      const row = rows[Math.min(rows.length - 1, Math.floor(x / specW * rows.length))];
+      for (let y = 0; y < plotH; y++) {
+        const b = Math.min(nb - 1, Math.floor((plotH - 1 - y) / plotH * nb));
+        const v = Math.max(0, Math.min(255, Math.round((row[b] + 120) / 120 * 255)));
+        const o = (y * specW + x) * 4;
+        img.data[o] = LUT[v * 3]; img.data[o + 1] = LUT[v * 3 + 1]; img.data[o + 2] = LUT[v * 3 + 2]; img.data[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, L, T);
+    const nyqK = r.sr / 2000, yOf = (k) => T + plotH - k / nyqK * plotH;
+    // axes text
+    ctx.font = "30px 'JetBrains Mono', monospace"; ctx.fillStyle = "#b9b2bd"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    const stepK = nyqK > 30 ? 8 : 4;
+    for (let k = 0; k <= nyqK + 0.01; k += stepK) {
+      ctx.fillText(String(k), L - 8, yOf(k));
+      ctx.fillStyle = "rgba(255,255,255,0.08)"; ctx.fillRect(L, Math.round(yOf(k)), specW, 1); ctx.fillStyle = "#b9b2bd";
+    }
+    ctx.save(); ctx.translate(16, T + plotH / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText("kHz", 0, 0); ctx.restore();
+    ctx.textAlign = "left"; ctx.textBaseline = "top";
+    ctx.fillText("0:00", L, T + plotH + 8);
+    ctx.textAlign = "right"; ctx.fillText(fmtTime(r.duration), L + specW, T + plotH + 8);
+    // profile panel
+    const px = L + specW + gap;
+    ctx.fillStyle = "#121016"; ctx.fillRect(px, T, profW, plotH);
+    const dbMin = -170, dbMax = -10, xOf = (db) => px + (Math.max(dbMin, Math.min(dbMax, db)) - dbMin) / (dbMax - dbMin) * profW;
+    ctx.strokeStyle = "#f5a623"; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (let b = 0; b < r.profile.length; b++) {
+      const x = xOf(r.profile[b]), y = yOf(r.freqs[b] / 1000);
+      b ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+    ctx.textAlign = "center"; ctx.fillStyle = "#b9b2bd"; ctx.fillText("level", px + profW / 2, T + plotH + 8);
+    // cutoff line
+    ctx.setLineDash([10, 8]); ctx.strokeStyle = "#5ee6f0"; ctx.lineWidth = 2;
+    const yc = Math.round(yOf(r.cutoffKhz)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(L, yc); ctx.lineTo(px + profW, yc); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#5ee6f0"; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+    ctx.fillText(`${r.cutoffKhz} kHz`, L + 8, Math.max(T + 34, yc - 6));
+  }
+
+  // ---------- summary ----------
+  const results = [];
+  function updateSummary() {
+    const own = results.filter((x) => !x.example);
+    if (!own.length) { $("summary").innerHTML = ""; return; }
+    const c = { ok: 0, warn: 0, bad: 0 };
+    own.forEach((x) => c[x.state]++);
+    $("summary").innerHTML =
+      `<span class="chip idle">${own.length} checked</span>` +
+      (c.ok ? `<span class="chip ok">${c.ok} genuine</span>` : "") +
+      (c.warn ? `<span class="chip warn">${c.warn} fake hi-res / suspicious</span>` : "") +
+      (c.bad ? `<span class="chip bad">${c.bad} lossy / unreadable</span>` : "");
+  }
+
+  // ---------- decoding ----------
+  async function decodeFile(file) {
+    const buf = await file.arrayBuffer();
+    const info = window.FlacAnalysis.readFlacInfo(buf.slice(0, 1 << 20));
+    if (!info) throw new Error("This isn't a FLAC file, or its header is damaged.");
+    const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const ctx = new Ctx(info.channels, 1, info.sr);   // same rate as the file: no resampling
+    const audio = await ctx.decodeAudioData(buf);
+    if (audio.sampleRate !== info.sr) throw new Error("This browser resampled the file, so it can't be checked accurately. Try Chrome.");
+    const channels = [];
+    for (let c = 0; c < audio.numberOfChannels; c++) channels.push(audio.getChannelData(c).slice());
+    return { info, channels };
+  }
+
+  // ---------- queue ----------
+  let busy = false; const queue = [];
+  async function pump() {
+    if (busy) return; busy = true; $("pick").disabled = false;
+    let done = 0;
+    while (queue.length) {
+      const { file, strip } = queue.shift(); done++;
+      const total = done + queue.length;
+      strip.querySelector(".meta").innerHTML = `<span class="chip idle">Decoding…</span>`;
+      statusEl.textContent = `Checking ${done} of ${total}: ${file.name}`;
+      const base = (done - 1) / total;
+      bar.style.width = `${base * 100}%`;
+      try {
+        const { info, channels } = await decodeFile(file);
+        strip.querySelector(".meta").innerHTML = `<span class="chip idle">Analysing…</span>`;
+        const r = await runAnalysis(info.sr, info.bits, channels,
+          (p) => { bar.style.width = `${(base + p / total) * 100}%`; });
+        fillStrip(strip, r, file.name, false, file);
+        results.push({ state: stateOf(r.verdict) });
+      } catch (err) {
+        failStrip(strip, file.name, err.message || String(err));
+        results.push({ state: "bad" });
+      }
+      updateSummary();
+    }
+    bar.style.width = "100%";
+    const own = results.filter((x) => !x.example).length;
+    statusEl.textContent = `Done. ${own} file${own === 1 ? "" : "s"} checked. Tap a result to see its spectrogram.`;
+    $("clear").hidden = false;
+    busy = false;
+  }
+  function addFiles(files) {
+    const flacs = [...files];
+    if (!flacs.length) return;
+    list.querySelectorAll('[data-example="1"]').forEach((n) => { n.querySelectorAll("audio").forEach((a) => a.pause()); n.remove(); });
+    for (let i = results.length - 1; i >= 0; i--) if (results[i].example) results.splice(i, 1);
+    flacs.forEach((file) => queue.push({ file, strip: addStrip(file.name) }));
+    pump();
+  }
+
+  $("pick").addEventListener("click", () => $("file").click());
+  $("file").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+  $("clear").addEventListener("click", () => {
+    if (busy) return;
+    stopAllAudio(); objectUrls.splice(0).forEach((u) => URL.revokeObjectURL(u));
+    list.innerHTML = ""; results.length = 0; updateSummary();
+    bar.style.width = "0"; statusEl.textContent = "Cleared. Choose files to check."; $("clear").hidden = true;
+  });
+  const loader = $("loader");
+  ["dragenter", "dragover"].forEach((t) => loader.addEventListener(t, (e) => { e.preventDefault(); loader.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((t) => loader.addEventListener(t, (e) => { e.preventDefault(); loader.classList.remove("drag"); }));
+  loader.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+
+  // ---------- example: synthetic AAC-style file with NO frequency cutoff ----------
+  // Built like an AAC decoder does it: quantised MDCT coefficients (many exactly
+  // zero), sine window, 1024-sample hop, then rounded to 16-bit. A spectrogram
+  // shows nothing wrong; the encoder fingerprint does.
+  function makeExample() {
+    const sr = 44100, N = 1024, M = 2 * N, frames = 860, out = new Float64Array(N * (frames + 1));
+    const re = new Float64Array(M), im = new Float64Array(M), win = new Float64Array(M);
+    for (let n = 0; n < M; n++) win[n] = Math.sin(Math.PI * (n + 0.5) / M);
+    let seed = 11;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+    const n0 = 0.5 + N / 2;
+    for (let f = 0; f < frames; f++) {
+      const beat = (f % 22) < 4 ? 1 : 0.35;                      // simple rhythm
+      for (let k = 0; k < M; k++) { re[k] = 0; im[k] = 0; }
+      for (let k = 1; k < N; k++) {
+        const g = beat / Math.sqrt(k + 2) + (k % 47 === 3 ? 0.4 : 0);   // 1/f noise + a few tones
+        const step = k < 100 ? 0.05 * g : 0.85 * g;                   // coarse steps up high -> zeros
+        const q = Math.round(g * gauss() / step) * step;
+        const ph = Math.PI * n0 * k / N;
+        re[k] = q * Math.cos(ph); im[k] = -q * Math.sin(ph);           // conj(Z)
+      }
+      fftLocal(re, im);                                             // FFT(conj Z) = conj(IFFT-sum)
+      for (let n = 0; n < M; n++) {
+        const sr_ = re[n], si = -im[n], a = Math.PI * (n + n0) / M;
+        const y = sr_ * Math.cos(a) - si * Math.sin(a);
+        out[f * N + n] += y * win[n];
+      }
+    }
+    let peak = 0; for (const v of out) peak = Math.max(peak, Math.abs(v));
+    const ch = new Float32Array(out.length);
+    for (let i = 0; i < out.length; i++) ch[i] = Math.round(out[i] / peak * 0.8 * 32767) / 32768;
+    return { sr, bits: 16, channels: [ch, ch.slice()] };
+  }
+  function toWav(chs, sr) {      // 16-bit PCM WAV blob so the example can be played
+    const n = chs[0].length, nc = chs.length, buf = new ArrayBuffer(44 + n * nc * 2), v = new DataView(buf);
+    const str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+    str(0, "RIFF"); v.setUint32(4, 36 + n * nc * 2, true); str(8, "WAVEfmt "); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, nc, true); v.setUint32(24, sr, true); v.setUint32(28, sr * nc * 2, true);
+    v.setUint16(32, nc * 2, true); v.setUint16(34, 16, true); str(36, "data"); v.setUint32(40, n * nc * 2, true);
+    let o = 44;
+    for (let i = 0; i < n; i++) for (let c = 0; c < nc; c++) { v.setInt16(o, Math.max(-32768, Math.min(32767, Math.round(chs[c][i] * 32768))), true); o += 2; }
+    return new Blob([buf], { type: "audio/wav" });
+  }
+  function fftLocal(re, im) {   // radix-2 forward FFT (main-thread copy)
+    const n = re.length, lv = Math.log2(n);
+    for (let i = 0; i < n; i++) { let r = 0, x = i; for (let b = 0; b < lv; b++) { r = (r << 1) | (x & 1); x >>= 1; }
+      if (r > i) { let t = re[i]; re[i] = re[r]; re[r] = t; t = im[i]; im[i] = im[r]; im[r] = t; } }
+    for (let s = 2; s <= n; s <<= 1) { const h = s >> 1, a0 = -2 * Math.PI / s;
+      for (let i = 0; i < n; i += s) for (let j = 0; j < h; j++) {
+        const c = Math.cos(a0 * j), si = Math.sin(a0 * j), a = i + j, b = a + h;
+        const tr = re[b] * c - im[b] * si, ti = re[b] * si + im[b] * c;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti; } }
+  }
+  (async () => {
+    const name = "AAC 256 kbps saved as .flac (no cutoff)";
+    const strip = addStrip(name, true);
+    try {
+      const ex = makeExample();
+      const wav = toWav(ex.channels, ex.sr);
+      const r = await runAnalysis(ex.sr, ex.bits, ex.channels);
+      fillStrip(strip, r, name, true, wav);
+      strip.open = true; drawScope(strip.querySelector("canvas"), r);
+      results.push({ state: stateOf(r.verdict), example: true });
+    } catch (e) { strip.remove(); }
+  })();
+})();
+</script>

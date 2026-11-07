@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CutoffCheck</title>
+<style>
+@font-face { font-family: "Patrick Hand"; src: url("fonts/PatrickHand-Regular.ttf") format("truetype"); font-display: swap; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+/* my css */
+* { box-sizing: border-box; }
+:root { color-scheme: light; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  background-color: #eef2f8;
+  color: #2f3340;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 10px 30px;
+}
+main { max-width: 720px; margin: 0 auto; }
+
+/* header */
+.top { display: flex; align-items: center; gap: 12px; margin: 12px 0 6px 0; }
+.logo { flex: none; width: 46px; height: 46px; }
+h1 { color: #0066cc; margin: 0; font-size: 28px; line-height: 1.1; }
+.h-or { color: #e8590c; }
+.ver { font-size: 12px; font-weight: normal; color: #0066cc; border: 1px solid #0066cc; border-radius: 10px; padding: 1px 7px; vertical-align: middle; position: relative; top: -3px; }
+.subtitle { color: #555555; margin: 6px 0 0 0; font-size: 15px; line-height: 1.45; }
+.hl { background: linear-gradient(transparent 55%, #fff27a 55%); padding: 0 2px; }
+hr { border: 0; border-top: 2px dashed #cccccc; margin: 18px 0; }
+
+/* sticky note */
+.note {
+  font-family: "Patrick Hand", "Comic Sans MS", "Chalkboard SE", cursive;
+  font-size: 19px; line-height: 1.25; color: #3b3b3b;
+  background-color: #fff7a8; padding: 10px 14px 12px 14px; margin: 16px 6px 4px 6px;
+  box-shadow: 2px 3px 6px rgba(0,0,0,0.18); transform: rotate(-1.2deg);
+  max-width: 420px;
+}
+.note b { font-weight: normal; text-decoration: underline; text-decoration-thickness: 2px; }
+
+.loader {
+  background-color: #f4f8ff;
+  border: 2px dashed #7aa7e0;
+  border-radius: 5px;
+  padding: 15px;
+  text-align: center;
+}
+.loader.drag { border-color: #007bff; background-color: #eef5ff; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 20px;
+  font-size: 16px;
+  min-height: 46px;
+  cursor: pointer;
+}
+.btn:hover { background-color: #0056b3; }
+.btn.ghost { background-color: #6c757d; }
+.btn.ghost:hover { background-color: #545b62; }
+.btn:disabled { background-color: #aaaaaa; }
+.btn:focus-visible, summary:focus-visible { outline: 3px solid #ffbf00; }
+.hint { color: #777777; font-size: 14px; }
+.progress { height: 14px; background-color: #dddddd; border: 1px solid #bbbbbb; margin: 10px 0; }
+.progress > i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(45deg, #2fb36b 0 10px, #43c97f 10px 20px); }
+.status { font-style: italic; color: #555555; font-size: 14px; overflow-wrap: anywhere; }
+
+.summary { margin: 15px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 7px;
+  border-radius: 3px;
+  color: white;
+}
+.chip.ok { background-color: #28a745; }
+.chip.warn { background-color: #e0a800; color: black; }
+.chip.bad { background-color: #dc3545; }
+.chip.idle { background-color: #6c757d; }
+
+.list { display: flex; flex-direction: column; gap: 10px; }
+.strip { background-color: white; border: 1px solid #cccccc; border-left-width: 6px; border-radius: 5px; }
+.strip[data-state="ok"] { border-color: #28a745; background-color: #f1fbf4; }
+.strip[data-state="warn"] { border-color: #e0a800; background-color: #fffaeb; }
+.strip[data-state="bad"] { border-color: #dc3545; background-color: #fff3f4; }
+.strip summary { cursor: pointer; padding: 10px; }
+.strip .name { display: inline; font-weight: bold; overflow-wrap: anywhere; }
+.strip .meta { margin-top: 6px; font-size: 13px; color: #555555; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.example-tag { background-color: yellow; color: black; font-size: 12px; padding: 1px 4px; }
+
+.detail { padding: 0 10px 10px 10px; }
+.scope { background-color: black; padding: 5px; }
+.scope canvas { display: block; width: 100%; height: auto; max-width: 100%; cursor: pointer; }
+.scope-in { position: relative; }
+.playhead { position: absolute; width: 2px; background-color: white; box-shadow: 0 0 4px black; pointer-events: none; }
+.player { display: block; width: 100%; margin-bottom: 8px; }
+.play-btn {
+  background-color: #28a745; color: white; border: none; border-radius: 4px;
+  font-size: 14px; font-weight: bold; padding: 6px 12px; min-height: 34px; cursor: pointer;
+}
+.play-btn:hover { background-color: #1e7e34; }
+.play-btn.playing { background-color: #fd7e14; }
+.play-error { color: #dc3545; font-size: 14px; }
+.facts { margin: 10px 0; }
+.facts div { margin-bottom: 4px; }
+.facts dt { display: inline; font-weight: bold; }
+.facts dt::after { content: ": "; }
+.facts dd { display: inline; margin: 0; overflow-wrap: anywhere; }
+.notes { margin: 5px 0 0 0; font-size: 14px; color: #444444; }
+
+.legend { background-color: white; border: 1px solid #cccccc; border-top: 5px solid #0066cc; padding: 10px; margin-top: 20px; }
+.legend h2 { font-size: 18px; margin: 0 0 10px 0; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { border: 1px solid #bbbbbb; padding: 6px; text-align: left; vertical-align: top; }
+th { background-color: #dde9fb; color: #1f3d66; }
+
+.sec-title { margin: 18px 0 10px 0; display: inline-block; border-bottom: 4px solid #e8590c; padding-bottom: 2px; }
+.box { background-color: white; border: 1px solid #cccccc; padding: 10px 12px; margin-top: 16px; }
+.box h2 { font-size: 18px; margin: 0 0 8px 0; }
+.box.faq { border-top: 5px solid #12a39a; }
+.box.faq h2 { color: #0c7f78; }
+.box.issues-box { border-top: 5px solid #f08c00; }
+.box.issues-box h2 { color: #c26c00; }
+.box.disclaimer { border-top: 5px solid #6b7280; background-color: #f8f9fb; }
+.box.disclaimer h2 { color: #4b5563; }
+.box.disclaimer .issues { font-size: 13px; color: #555555; }
+.faq details { border-top: 1px solid #e3e3e3; padding: 8px 0; }
+.faq details:first-of-type { border-top: 0; }
+.faq summary { cursor: pointer; font-weight: bold; font-size: 15px; }
+.faq summary::marker { color: #12a39a; }
+.faq p { margin: 6px 0 2px 18px; font-size: 14px; color: #444444; line-height: 1.45; }
+.issues { margin: 0; padding-left: 18px; font-size: 14px; color: #444444; line-height: 1.5; }
+
+footer { text-align: center; font-size: 13px; color: #6b7280; margin-top: 22px; line-height: 1.6; }
+footer::before { content: ""; display: block; height: 4px; margin: 0 auto 10px auto; width: 120px; border-radius: 2px;
+  background: linear-gradient(90deg, #7b2cbf, #f72585, #ff6d00, #ffd60a); }
+</style>
+
+</head>
+<body>
+<main>
+  <div class="top">
+    <svg class="logo" viewBox="0 0 46 46" aria-hidden="true">
+      <rect x="1.5" y="1.5" width="43" height="43" rx="7" fill="#1d1b3a"/>
+      <g stroke-width="3" stroke-linecap="round">
+        <line x1="9" y1="21" x2="9" y2="25" stroke="#7b2cbf"/><line x1="14" y1="15" x2="14" y2="31" stroke="#b5179e"/>
+        <line x1="19" y1="10" x2="19" y2="36" stroke="#f72585"/><line x1="24" y1="17" x2="24" y2="29" stroke="#ff6d00"/>
+        <line x1="29" y1="12" x2="29" y2="34" stroke="#ff9e00"/><line x1="34" y1="19" x2="34" y2="27" stroke="#ffd60a"/>
+        <line x1="38.5" y1="22" x2="38.5" y2="24" stroke="#fff3b0"/>
+      </g>
+    </svg>
+    <h1>Cutoff<span class="h-or">Check</span> <span class="ver">v1.2</span></h1>
+  </div>
+  <p class="subtitle">I kept downloading "lossless" albums that turned out to be MP3s with a .flac name, so I made this. It checks if a FLAC is really lossless, fake hi-res or a converted MP3/AAC. <span class="hl">Everything stays on your phone, nothing gets uploaded.</span></p>
+
+  <div class="note">tip: tap anywhere on a <b>spectrogram</b> to jump to that part of the song :)</div>
+  <hr>
+
+  <div class="loader" id="loader">
+    <div class="row">
+      <button class="btn" id="pick" type="button">Choose FLAC files</button>
+      <button class="btn ghost" id="clear" type="button" hidden>Clear results</button>
+      <input id="file" type="file" accept=".flac,audio/flac,audio/x-flac" multiple hidden>
+    </div>
+    <p class="hint">You can pick lots of songs at once. Each one takes about 5–15 seconds on a phone. Tap &#9654; Play to listen, and tap the spectrogram to jump to that spot.</p>
+    <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+    <div class="status" id="status" role="status">Showing an example result. Choose files to check your own.</div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+  <h3 class="sec-title">Results</h3>
+  <div class="list" id="list"></div>
+
+  <div class="legend">
+    <h2>What do the results mean?</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Result</th><th>Meaning</th></tr>
+        <tr><td><span class="chip ok">Genuine</span></td><td>Full frequency range, no lossy cutoff. Real lossless audio.</td></tr>
+        <tr><td><span class="chip warn">Fake hi-res</span></td><td>Says 88.2/96 kHz but the audio is really 44.1/48 kHz. Still lossless, sounds the same, just a bigger file.</td></tr>
+        <tr><td><span class="chip warn">Fake 24-bit</span></td><td>16-bit audio padded to 24-bit. Still lossless.</td></tr>
+        <tr><td><span class="chip warn">Suspicious</span></td><td>Not sure. Look at the spectrogram: a flat wall is bad, a slow fade is fine.</td></tr>
+        <tr><td><span class="chip bad">Lossy</span></td><td>An MP3, AAC or Vorbis encoder fingerprint was found, or a sharp cutoff from MP3/AAC/Opus. This is a fake FLAC, even at 320 kbps!</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="box faq">
+    <h2>FAQ</h2>
+    <details>
+      <summary>How can it tell a 320 kbps MP3 from real lossless?</summary>
+      <p>MP3, AAC and Vorbis encoders save the sound in fixed-size blocks, and lots of values inside those blocks end up exactly zero. Those zeros are still there after converting to FLAC. The app redoes each encoder's maths at every possible block position, and if one position shows a big pile of zeros all through the song, it went through that encoder. Real lossless audio never has a position like that.</p>
+    </details>
+    <details>
+      <summary>Is "fake hi-res" bad?</summary>
+      <p>Not for listening. It's real lossless audio at CD quality that someone upsampled to 96 kHz, so it sounds the same and just takes twice the space.</p>
+    </details>
+    <details>
+      <summary>Why is it slow?</summary>
+      <p>It decodes the whole song and runs a few thousand transforms on it, all on your phone. That's the price of not uploading anything.</p>
+    </details>
+    <details>
+      <summary>Does it work offline?</summary>
+      <p>Yes, completely. The app doesn't even have internet permission, so your songs can't leave the phone.</p>
+    </details>
+  </div>
+
+  <div class="box issues-box">
+    <h2>Known issues</h2>
+    <ul class="issues">
+      <li>If a lossy file was resampled after converting (like an MP3 made into fake 96 kHz), only the cutoff check can catch it.</li>
+      <li>Very quiet or very sparse recordings, and songs that clip constantly, can hide the encoder pattern.</li>
+      <li>WMA, AC-3 and other rare codecs are only caught if they leave a cutoff.</li>
+      <li>Big 96 kHz files use a lot of memory on older phones. Check them a few at a time.</li>
+    </ul>
+  </div>
+
+  <div class="box disclaimer">
+    <h2>Disclaimer</h2>
+    <ul class="issues">
+      <li>This tool only looks at audio quality. It doesn't check where a file came from or whether you're allowed to have it.</li>
+      <li>Not affiliated with any music store, streaming service or codec maker. All names are used only to describe file formats.</li>
+      <li>Your files are read on your own device and are never uploaded or stored anywhere.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>CutoffCheck v1.2 &middot; Android app</p>
+  </footer>
+</main>
+
+<script id="analysis-src">/* codecprint — JS port of codecprint.py: finds MP3 / AAC / Vorbis encoder grids
+   in decoded audio. Same constants and decision rules as the Python version. */
+(function (root) {
+  "use strict";
+  const ENWINDOW_HALF = [0, -1, -1, -1, -1, -1, -1, -2, -2, -2, -2, -3, -3, -4, -4, -5, -5, -6, -7, -7, -8, -9, -10, -11, -13, -14, -16, -17, -19, -21, -24, -26, -29, -31, -35, -38, -41, -45, -49, -53, -58, -63, -68, -73, -79, -85, -91, -97, -104, -111, -117, -125, -132, -139, -147, -154, -161, -169, -176, -183, -190, -196, -202, -208, 213, 218, 222, 225, 227, 228, 228, 227, 224, 221, 215, 208, 200, 189, 177, 163, 146, 127, 106, 83, 57, 29, -2, -36, -72, -111, -153, -197, -244, -294, -347, -401, -459, -519, -581, -645, -711, -779, -848, -919, -991, -1064, -1137, -1210, -1283, -1356, -1428, -1498, -1567, -1634, -1698, -1759, -1817, -1870, -1919, -1962, -2001, -2032, -2057, -2075, -2085, -2087, -2080, -2063, 2037, 2000, 1952, 1893, 1822, 1739, 1644, 1535, 1414, 1280, 1131, 970, 794, 605, 402, 185, -45, -288, -545, -814, -1095, -1388, -1692, -2006, -2330, -2663, -3004, -3351, -3705, -4063, -4425, -4788, -5153, -5517, -5879, -6237, -6589, -6935, -7271, -7597, -7910, -8209, -8491, -8755, -8998, -9219, -9416, -9585, -9727, -9838, -9916, -9959, -9966, -9935, -9863, -9750, -9592, -9389, -9139, -8840, -8492, -8092, -7640, -7134, 6574, 5959, 5288, 4561, 3776, 2935, 2037, 1082, 70, -998, -2122, -3300, -4533, -5818, -7154, -8540, -9975, -11455, -12980, -14548, -16155, -17799, -19478, -21189, -22929, -24694, -26482, -28289, -30112, -31947, -33791, -35640, -37489, -39336, -41176, -43006, -44821, -46617, -48390, -50137, -51853, -53534, -55178, -56778, -58333, -59838, -61289, -62684, -64019, -65290, -66494, -67629, -68692, -69679, -70590, -71420, -72169, -72835, -73415, -73908, -74313, -74630, -74856, -74992, 75038];
+  const MP3_GAIN = 16.86865290663406;
+  const REL = 1e-3, FRAMES = 2, GRANULES = 6, Z_MIN = 10, EXCESS_MIN = 0.01;
+
+  // ---------------- tables ----------------
+  const C = new Float64Array(512);
+  ENWINDOW_HALF.forEach((v, i) => { C[i] = v; if (i) C[512 - i] = i % 64 === 0 ? v : -v; });
+  for (let i = 0; i < 512; i++) C[i] /= 65536;
+  const POLY = new Float64Array(32 * 64);
+  for (let sb = 0; sb < 32; sb++) for (let j = 0; j < 64; j++) POLY[sb * 64 + j] = Math.cos((2 * sb + 1) * (j - 16) * Math.PI / 64);
+  const MDCT18 = new Float64Array(36 * 18);
+  for (let k = 0; k < 36; k++) for (let m = 0; m < 18; m++)
+    MDCT18[k * 18 + m] = Math.cos(Math.PI / 72 * (2 * k + 1 + 18) * (2 * m + 1)) * Math.sin(Math.PI / 36 * (k + 0.5));
+  const CI = [-0.6, -0.535, -0.33, -0.185, -0.095, -0.041, -0.0142, -0.0037];
+  const CS = CI.map((c) => 1 / Math.sqrt(1 + c * c)), CA = CI.map((c) => c / Math.sqrt(1 + c * c));
+
+  // ---------------- windows ----------------
+  function besselI0(x) { let s = 1, t = 1; for (let k = 1; k < 60; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; if (t < 1e-17 * s) break; } return s; }
+  function kbdWindow(N, alpha = 4) {
+    const M = N + 1, beta = Math.PI * alpha, w = new Float64Array(M);
+    let total = 0;
+    for (let n = 0; n < M; n++) { const r = 2 * n / (M - 1) - 1; w[n] = besselI0(beta * Math.sqrt(Math.max(0, 1 - r * r))); total += w[n]; }
+    const out = new Float64Array(2 * N); let c = 0;
+    for (let n = 0; n < N; n++) { c += w[n]; out[n] = Math.sqrt(c / total); out[2 * N - 1 - n] = out[n]; }
+    return out;
+  }
+  const sineWindow = (N) => Float64Array.from({ length: 2 * N }, (_, n) => Math.sin(Math.PI * (n + 0.5) / (2 * N)));
+  const vorbisWindow = (N) => Float64Array.from({ length: 2 * N }, (_, n) => Math.sin(Math.PI / 2 * Math.sin(Math.PI * (n + 0.5) / (2 * N)) ** 2));
+
+  // ---------------- FFT (radix-2 complex, in place) ----------------
+  const fftT = {};
+  function fftTables(n) {
+    if (fftT[n]) return fftT[n];
+    const lv = Math.log2(n), rev = new Uint32Array(n);
+    for (let i = 0; i < n; i++) { let r = 0, x = i; for (let b = 0; b < lv; b++) { r = (r << 1) | (x & 1); x >>= 1; } rev[i] = r; }
+    const cos = new Float64Array(n / 2), sin = new Float64Array(n / 2);
+    for (let i = 0; i < n / 2; i++) { cos[i] = Math.cos(2 * Math.PI * i / n); sin[i] = Math.sin(2 * Math.PI * i / n); }
+    return (fftT[n] = { rev, cos, sin });
+  }
+  function fft(re, im) {
+    const n = re.length, { rev, cos, sin } = fftTables(n);
+    for (let i = 0; i < n; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+    for (let size = 2; size <= n; size <<= 1) {
+      const half = size >> 1, step = n / size;
+      for (let i = 0; i < n; i += size) for (let j = 0, k = 0; j < half; j++, k += step) {
+        const a = i + j, b = a + half, tr = re[b] * cos[k] + im[b] * sin[k], ti = -re[b] * sin[k] + im[b] * cos[k];
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+      }
+    }
+  }
+
+  // ---------------- MDCT via N/2-point FFT (same algorithm as mdct_rows) ----------------
+  function makeMdct(N, win) {
+    const h = N / 2, re = new Float64Array(h), im = new Float64Array(h), z = new Float64Array(2 * N), r = new Float64Array(N);
+    const pc = new Float64Array(h), ps = new Float64Array(h), qc = new Float64Array(h), qs = new Float64Array(h);
+    for (let n = 0; n < h; n++) {
+      pc[n] = Math.cos(Math.PI * (n + 0.25) / N); ps[n] = -Math.sin(Math.PI * (n + 0.25) / N);
+      qc[n] = Math.cos(Math.PI * n / N); qs[n] = -Math.sin(Math.PI * n / N);
+    }
+    const X = new Float64Array(N);
+    return function (sig, start) {            // MDCT of sig[start .. start+2N)
+      for (let i = 0; i < 2 * N; i++) z[i] = sig[start + i] * win[i];
+      for (let n = 0; n < h; n++) { r[n] = -z[3 * h + n] - z[3 * h - 1 - n]; r[h + n] = z[n] - z[N - 1 - n]; }
+      for (let n = 0; n < h; n++) {
+        const a = r[2 * n], b = r[N - 1 - 2 * n];
+        re[n] = a * pc[n] - b * ps[n]; im[n] = a * ps[n] + b * pc[n];
+      }
+      fft(re, im);
+      for (let n = 0; n < h; n++) {
+        const vr = re[n] * qc[n] - im[n] * qs[n], vi = re[n] * qs[n] + im[n] * qc[n];
+        X[2 * n] = vr; X[N - 1 - 2 * n] = -vi;
+      }
+      return X;
+    };
+  }
+
+  function sparsity(X, off, lo, hi, floor) {
+    let ss = 0;
+    for (let i = lo; i < hi; i++) { const v = X[off + i]; ss += v * v; }
+    const thr = Math.max((Math.sqrt(ss / (hi - lo)) + 1e-20) * REL, floor);
+    let c = 0;
+    for (let i = lo; i < hi; i++) if (Math.abs(X[off + i]) < thr) c++;
+    return c / (hi - lo);
+  }
+  const noiseFloor = (bits, gain) => 3 * Math.pow(2, -(bits - 1)) / Math.sqrt(12) * gain;
+
+  // ---------------- scans ----------------
+  function mdctCurves(chans, starts, N, win, floor) {
+    const curves = starts.map(() => new Float64Array(N));
+    const lo = Math.floor(N * 0.02), hi = Math.floor(N * 0.75), mdct = makeMdct(N, win);
+    for (const c of chans) starts.forEach((s, si) => {
+      if (s + (FRAMES + 2) * N - 1 > c.length) return;
+      const per = new Float64Array(N);
+      for (let f = 0; f < FRAMES; f++) for (let o = 0; o < N; o++)
+        per[o] += sparsity(mdct(c, s + f * N + o), 0, lo, hi, floor) / FRAMES;
+      const sh = s % N;
+      for (let o = 0; o < N; o++) curves[si][(o + sh) % N] += per[o];
+    });
+    return curves;
+  }
+
+  function mp3Curves(chans, starts, floor) {
+    const curves = starts.map(() => new Float64Array(576));
+    const nsteps = 18 * (GRANULES + 2), S = new Float64Array(nsteps * 32), Y = new Float64Array(64);
+    const xr = new Float64Array(GRANULES * 576);
+    for (const c of chans) starts.forEach((s, si) => {
+      if (s < 600 || s + 32 * nsteps + 64 > c.length) return;
+      for (let phase = 0; phase < 32; phase++) {
+        // polyphase analysis: S[t][sb]
+        for (let t = 0; t < nsteps; t++) {
+          const idx = s + phase + 32 * t;
+          for (let j = 0; j < 64; j++) {
+            let y = 0;
+            for (let m = 0; m < 8; m++) { const k = j + 64 * m; y += c[idx - k] * C[k]; }
+            Y[j] = y;
+          }
+          for (let sb = 0; sb < 32; sb++) {
+            let v = 0; const pr = sb * 64;
+            for (let j = 0; j < 64; j++) v += POLY[pr + j] * Y[j];
+            S[t * 32 + sb] = v;
+          }
+        }
+        for (let bphase = 0; bphase < 18; bphase++) {
+          for (let g = 0; g < GRANULES; g++) {
+            const t0 = bphase + 18 * g;
+            for (let sb = 0; sb < 32; sb++) {
+              const odd = sb & 1, base = g * 576 + sb * 18;
+              for (let m = 0; m < 18; m++) xr[base + m] = 0;
+              for (let k = 0; k < 36; k++) {
+                let v = S[(t0 + k) * 32 + sb];
+                if (odd && (k & 1)) v = -v;               // frequency inversion
+                if (v === 0) continue;
+                const mr = k * 18;
+                for (let m = 0; m < 18; m++) xr[base + m] += v * MDCT18[mr + m];
+              }
+            }
+            // alias-reduction butterflies
+            for (let sb = 1; sb < 32; sb++) for (let i = 0; i < 8; i++) {
+              const ia = g * 576 + 18 * sb - 1 - i, ib = g * 576 + 18 * sb + i, A = xr[ia], B = xr[ib];
+              xr[ia] = A * CS[i] + B * CA[i]; xr[ib] = B * CS[i] - A * CA[i];
+            }
+          }
+          let sp = 0;
+          for (let g = 0; g < GRANULES; g++) sp += sparsity(xr, g * 576, 8, 540, floor);
+          curves[si][(s + phase + 32 * bphase) % 576] += sp / GRANULES;
+        }
+      }
+    });
+    return curves;
+  }
+
+  // ---------------- statistics ----------------
+  function median(a) {
+    const b = Float64Array.from(a).sort(), n = b.length;
+    return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2;
+  }
+  function gridStats(curves, fold) {
+    let rows = curves;
+    if (fold) rows = curves.map((c) => { const f = new Float64Array(fold).fill(-Infinity); c.forEach((v, p) => { if (v > f[p % fold]) f[p % fold] = v; }); return f; });
+    const active = rows.filter((r) => { let mx = -Infinity, mn = Infinity; for (const v of r) { if (v > mx) mx = v; if (v < mn) mn = v; } return mx - mn > 1e-6; });
+    if (!active.length) return { agree: 0, sections: 0, z: 0, excess: 0, lift: 0 };
+    const argmax = (r) => { let b = 0; for (let i = 1; i < r.length; i++) if (r[i] > r[b]) b = i; return b; };
+    const counts = new Map();
+    active.forEach((r) => { const w = argmax(r); counts.set(w, (counts.get(w) || 0) + 1); });
+    let pos = Infinity, agree = 0;
+    for (const [v, c] of counts) if (c > agree || (c === agree && v < pos)) { agree = c; pos = v; }
+    const total = new Float64Array(active[0].length);
+    active.forEach((r) => r.forEach((v, i) => { total[i] += v; }));
+    const n = active.length, med = median(total);
+    const mad = median(total.map((v) => Math.abs(v - med))) * 1.4826;
+    const peak = argmax(total);
+    const excess = (total[peak] - med) / n, z = (total[peak] - med) / Math.max(mad, 1e-3 * n);
+    return { agree, sections: n, z: Math.round(z * 10) / 10, excess: Math.round(excess * 1e4) / 1e4, lift: total[pos] / (med + 1e-4) };
+  }
+
+  function sectionStarts(mono, count, peakSrc) {
+    const blk = 4096, nb = Math.floor(mono.length / blk);
+    if (nb < 8) return [];
+    const rms = new Float64Array(nb), clipped = new Uint8Array(nb);
+    let peak = 0;
+    for (let b = 0; b < nb; b++) for (let i = b * blk; i < (b + 1) * blk; i++) { const p = Math.abs(peakSrc[i]); if (p > peak) peak = p; }
+    let nclip = 0;
+    for (let b = 0; b < nb; b++) {
+      let ss = 0, cl = 0;
+      for (let i = b * blk; i < (b + 1) * blk; i++) { ss += mono[i] * mono[i]; if (peak > 0.5 && Math.abs(peakSrc[i]) >= 0.999 * peak) cl++; }
+      rms[b] = Math.sqrt(ss / blk); clipped[b] = cl > 2 ? 1 : 0; nclip += clipped[b];
+    }
+    const gate = Math.max(1e-4, 0.1 * median(rms));
+    if (nclip / nb < 0.8) for (let b = 0; b < nb; b++) if (clipped[b]) rms[b] = 0;
+    const starts = [];
+    for (let i = 0; i < count; i++) {
+      const f = 0.06 + (0.94 - 0.06) * i / (count - 1);
+      let b = Math.floor(nb * f);
+      const end = Math.min(nb - 4, b + Math.max(1, Math.floor(nb / count)));
+      while (b < end && rms[b] < gate) b++;
+      if (b < nb - 4 && rms[b] >= gate) starts.push(b * blk + (i * 1009 + 97) % blk);
+    }
+    return starts;
+  }
+
+  function decide(stats) {
+    let best = null;
+    for (const name of ["MP3", "AAC", "Vorbis"]) {
+      const st = stats[name];
+      if (!st || st.sections < 3) continue;
+      const n = st.sections;
+      const agreeOk = st.agree >= Math.max(3, Math.ceil(n / 2));
+      const strong = st.z >= Z_MIN && st.excess >= EXCESS_MIN;
+      const veryConsistent = st.agree >= Math.max(4, Math.ceil(3 * n / 4)) && st.z >= 0.6 * Z_MIN;
+      if ((strong && agreeOk) || veryConsistent) if (best === null || st.z > stats[best].z) best = name;
+    }
+    return best;
+  }
+  function confidence(stats, codec) {
+    if (!codec) return "";
+    const st = stats[codec];
+    return st.z >= 2 * Z_MIN && st.agree >= 0.6 * st.sections ? "certain" : "likely";
+  }
+
+  /** detect(left, right|null, bits, onProgress?) -> {codec, confidence, stats, sections} */
+  function detect(left, right, bits, onProgress) {
+    const n = left.length, R = right || left;
+    const mid = new Float64Array(n), side = new Float64Array(n), pk = new Float64Array(n);
+    let sideMax = 0;
+    for (let i = 0; i < n; i++) {
+      mid[i] = (left[i] + R[i]) / 2; side[i] = (left[i] - R[i]) / 2;
+      pk[i] = Math.max(Math.abs(left[i]), Math.abs(R[i]));
+      if (Math.abs(side[i]) > sideMax) sideMax = Math.abs(side[i]);
+    }
+    const chans = sideMax < 1e-9 ? [mid] : [mid, side];
+    const all = sectionStarts(mid, 12, pk);
+    const first = all.filter((_, i) => i % 2 === 0), second = all.filter((_, i) => i % 2 === 1);
+    bits = Math.max(8, Math.min(32, Math.floor(bits || 16)));
+    const fM = noiseFloor(bits, Math.sqrt(512)), f3 = noiseFloor(bits, MP3_GAIN);
+    const W = { kbd: kbdWindow(1024), sine: sineWindow(1024), vorbis: vorbisWindow(1024) };
+    const prog = (p) => { if (onProgress) onProgress(p); };
+
+    function scan(starts, p0, p1) {
+      const k = mdctCurves(chans, starts, 1024, W.kbd, fM); prog(p0 + (p1 - p0) * 0.15);
+      const s = mdctCurves(chans, starts, 1024, W.sine, fM); prog(p0 + (p1 - p0) * 0.3);
+      const aac = k.map((row, i) => row.map((v, j) => Math.max(v, s[i][j])));
+      const vorbis = mdctCurves(chans, starts, 1024, W.vorbis, fM); prog(p0 + (p1 - p0) * 0.45);
+      const mp3 = mp3Curves(chans, starts, f3); prog(p1);
+      return { AAC: aac, Vorbis: vorbis, MP3: mp3 };
+    }
+    const statsOf = (cv) => ({ AAC: gridStats(cv.AAC), Vorbis: gridStats(cv.Vorbis, 128), MP3: gridStats(cv.MP3) });
+
+    if (first.length < 3) return { codec: null, confidence: "", stats: {}, sections: 0 };
+    let curves = scan(first, 0, 0.6);
+    let stats = statsOf(curves), found = decide(stats), used = first.length;
+    const borderline = Object.values(stats).some((v) => v.z >= Z_MIN / 2 || v.agree >= 2);
+    if (found === null && borderline && second.length >= 3) {
+      const more = scan(second, 0.6, 1);
+      curves = { AAC: curves.AAC.concat(more.AAC), Vorbis: curves.Vorbis.concat(more.Vorbis), MP3: curves.MP3.concat(more.MP3) };
+      stats = statsOf(curves); found = decide(stats); used += second.length;
+    }
+    prog(1);
+    return { codec: found, confidence: confidence(stats, found), stats, sections: used };
+  }
+
+  root.CodecPrint = { detect };
+  if (typeof module !== "undefined") module.exports = root.CodecPrint;
+})(typeof window !== "undefined" ? window : globalThis);
+
+/* FLAC authenticity analysis — JS port of flaccheck.py (same thresholds). */
+(function (root) {
+  "use strict";
+  const NFFT = 4096;
+  const MAX_FRAMES = 2000;
+
+  // ---------- FFT (radix-2, complex, in-place) ----------
+  const fftCache = {};
+  function fftTables(n) {
+    if (fftCache[n]) return fftCache[n];
+    const levels = Math.log2(n);
+    const rev = new Uint32Array(n);
+    for (let i = 0; i < n; i++) {
+      let r = 0, x = i;
+      for (let b = 0; b < levels; b++) { r = (r << 1) | (x & 1); x >>= 1; }
+      rev[i] = r;
+    }
+    const cos = new Float64Array(n / 2), sin = new Float64Array(n / 2);
+    for (let i = 0; i < n / 2; i++) { cos[i] = Math.cos(2 * Math.PI * i / n); sin[i] = Math.sin(2 * Math.PI * i / n); }
+    return (fftCache[n] = { rev, cos, sin });
+  }
+  function fft(re, im) {
+    const n = re.length, { rev, cos, sin } = fftTables(n);
+    for (let i = 0; i < n; i++) {
+      const j = rev[i];
+      if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+    }
+    for (let size = 2; size <= n; size <<= 1) {
+      const half = size >> 1, step = n / size;
+      for (let i = 0; i < n; i += size) {
+        for (let j = 0, k = 0; j < half; j++, k += step) {
+          const a = i + j, b = a + half;
+          const tr = re[b] * cos[k] + im[b] * sin[k];
+          const ti = -re[b] * sin[k] + im[b] * cos[k];
+          re[b] = re[a] - tr; im[b] = im[a] - ti;
+          re[a] += tr; im[a] += ti;
+        }
+      }
+    }
+  }
+
+  // ---------- small numeric helpers (numpy-equivalent) ----------
+  function percentile(arr, p) {               // linear interpolation, like numpy
+    const a = Float64Array.from(arr).sort();
+    const pos = (a.length - 1) * p / 100, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return a[lo] + (a[hi] - a[lo]) * (pos - lo);
+  }
+  const median = (a) => percentile(a, 50);
+  function smooth(x, k) {                    // np.convolve(x, ones(k)/k, 'same')
+    if (k <= 1) return Float64Array.from(x);
+    const n = x.length, out = new Float64Array(n), off = Math.floor((k - 1) / 2);
+    const pre = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) pre[i + 1] = pre[i] + x[i];
+    for (let i = 0; i < n; i++) {
+      const c = i + off;                      // index into the 'full' output
+      const lo = Math.max(0, c - k + 1), hi = Math.min(n - 1, c);
+      out[i] = (pre[hi + 1] - pre[lo]) / k;
+    }
+    return out;
+  }
+  function meanWhere(x, freqs, lo, hi) {
+    let s = 0, c = 0;
+    for (let i = 0; i < x.length; i++) if (freqs[i] > lo && freqs[i] < hi) { s += x[i]; c++; }
+    return c ? s / c : NaN;
+  }
+  function medianWhere(x, freqs, lo, hi) {
+    const v = [];
+    for (let i = 0; i < x.length; i++) if (freqs[i] > lo && freqs[i] < hi) v.push(x[i]);
+    return median(v);
+  }
+
+  function findCutoff(profile, freqs, ref, dropDb = 65) {
+    const df = freqs[1] - freqs[0], n = profile.length, top = freqs[n - 1] - 250;
+    const k = Math.max(1, Math.floor(500 / df));
+    let run = 0; const mask = new Uint8Array(n);
+    let last = -1;
+    for (let i = 0; i < n; i++) {
+      mask[i] = profile[i] > ref - dropDb && freqs[i] < top ? 1 : 0;
+      run += mask[i];
+      if (i >= k) run -= mask[i - k];
+      if (run / k >= 0.8) last = i;
+    }
+    return last >= 0 ? freqs[last] : 0;
+  }
+  function wallSteepness(profile, freqs, fc, nyq) {
+    let sb = 0, cb = 0, sa = 0, ca = 0;
+    for (let i = 0; i < freqs.length; i++) {
+      const f = freqs[i];
+      if (f > fc - 1500 && f < fc - 300) { sb += profile[i]; cb++; }
+      if (f > fc + 300 && f < Math.min(fc + 1500, nyq)) { sa += profile[i]; ca++; }
+    }
+    return cb < 3 || ca < 3 ? 0 : sb / cb - sa / ca;
+  }
+
+  function guessLossy(k) {
+    if (k < 11.5) return "very low bitrate lossy (≤64 kbps)";
+    if (k < 15.0) return "MP3 ~96 kbps / low-bitrate AAC";
+    if (k < 16.3) return "MP3 112–128 kbps (older encoder)";
+    if (k < 17.5) return "MP3 128 kbps";
+    if (k < 18.6) return "MP3 160 kbps";
+    if (k < 19.4) return "MP3 192–224 kbps";
+    if (k < 20.2) return "MP3 256 kbps / V0";
+    return "MP3 320 kbps, Opus or high-bitrate AAC";
+  }
+
+  /** Bits actually used. channels: Float32Array[] in [-1,1); declaredBits from the header. */
+  function effectiveBits(channels, declaredBits) {
+    const scale = Math.pow(2, declaredBits - 1);
+    let acc = 0;
+    for (const ch of channels) {
+      for (let i = 0; i < ch.length; i += 1) {
+        acc |= Math.round(ch[i] * scale);
+        if (acc & 1) return declaredBits;     // lowest bit used: nothing to find
+      }
+    }
+    if (acc === 0) return 0;
+    let tz = 0; while (((acc >> tz) & 1) === 0 && tz < 32) tz++;
+    return declaredBits - tz;
+  }
+
+  /**
+   * analyse({ sr, bits, channels: Float32Array[], onProgress? })
+   * returns a result object (same fields/verdicts as flaccheck.py)
+   */
+  function analyse({ sr, bits, channels, onProgress }) {
+    const nyq = sr / 2, len = channels[0].length, nch = channels.length;
+    const r = { sr, bits, duration: len / sr, notes: [], lossyGuess: "" };
+    r.effBits = bits >= 24 ? effectiveBits(channels, bits) : bits;
+
+    // ---- spectrogram frames (dBFS) ----
+    const n = Math.floor((len - NFFT) / NFFT);
+    if (n < 8) throw new Error("File is too short to analyse.");
+    const count = Math.min(n, MAX_FRAMES), bins = NFFT / 2 + 1;
+    const win = new Float64Array(NFFT); let wsum = 0;
+    for (let i = 0; i < NFFT; i++) { win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (NFFT - 1)); wsum += win[i]; }
+    const norm = wsum / 2;
+    const db = new Array(count), energy = new Float64Array(count);
+    const re = new Float64Array(NFFT), im = new Float64Array(NFFT);
+    for (let f = 0; f < count; f++) {
+      const start = Math.floor(count > 1 ? f * (n - 1) / (count - 1) : 0) * NFFT;
+      for (let i = 0; i < NFFT; i++) {
+        let s = 0; for (let c = 0; c < nch; c++) s += channels[c][start + i];
+        re[i] = (s / nch) * win[i]; im[i] = 0;
+      }
+      fft(re, im);
+      const row = new Float32Array(bins); let mx = -Infinity;
+      for (let b = 0; b < bins; b++) {
+        const v = 20 * Math.log10(Math.hypot(re[b], im[b]) / norm + 1e-12);
+        row[b] = v; if (v > mx) mx = v;
+      }
+      db[f] = row; energy[f] = mx;
+      if (onProgress && f % 100 === 0) onProgress(0.35 * f / count);
+    }
+    const freqs = new Float64Array(bins);
+    for (let b = 0; b < bins; b++) freqs[b] = b * sr / NFFT;
+
+    // ---- louder half of frames ----
+    const thr = median(energy);
+    const loud = db.filter((_, i) => energy[i] >= thr);
+
+    const smoothK = Math.max(1, Math.floor(150 / (sr / NFFT)));
+    const col = new Float64Array(loud.length);
+    const p95 = new Float64Array(bins), p75 = new Float64Array(bins);
+    for (let b = 0; b < bins; b++) {
+      for (let i = 0; i < loud.length; i++) col[i] = loud[i][b];
+      const a = Float64Array.from(col).sort();
+      const pick = (p) => { const pos = (a.length - 1) * p, lo = Math.floor(pos), hi = Math.ceil(pos); return a[lo] + (a[hi] - a[lo]) * (pos - lo); };
+      p95[b] = pick(0.95); p75[b] = pick(0.75);
+    }
+    const profile = smooth(p95, smoothK);
+    const ref = medianWhere(profile, freqs, 2000, 8000);
+
+    const fc = findCutoff(profile, freqs, ref);
+    r.cutoffKhz = Math.round(fc / 10) / 100;
+    r.wallDb = Math.round(wallSteepness(profile, freqs, fc, nyq) * 10) / 10;
+
+    // ---- per-frame cutoffs ----
+    const step = Math.max(1, Math.floor(loud.length / 400));
+    let low = 0, tot = 0;
+    const lowLimit = Math.min(19500, nyq - 1500);
+    for (let i = 0; i < loud.length; i += step) {
+      const p = smooth(loud[i], smoothK);
+      if (findCutoff(p, freqs, medianWhere(p, freqs, 2000, 8000)) < lowLimit) low++;
+      tot++;
+    }
+    r.lossyFramesPct = Math.round(1000 * low / tot) / 10;
+
+    // ---- hi-res ----
+    r.hiresEnergy = false;
+    if (sr >= 88200) {
+      const hi = [];
+      for (let b = 0; b < bins; b++) if (freqs[b] > 25000) hi.push(p75[b]);
+      r.hiresEnergy = median(hi) > ref - 70 && fc > 25000;
+    }
+
+    // ---- steepest large drop (Opus edge) ----
+    let edgeF = 0, edgeDrop = 0;
+    {
+      const df = freqs[1] - freqs[0], k1 = Math.max(1, Math.floor(300 / df)), k2 = Math.max(2, Math.floor(1200 / df));
+      for (let i = Math.floor(12000 / df); i < bins - k2; i++) {
+        if (freqs[i] > nyq - 700) break;
+        let a = 0; for (let j = i - k2; j < i - k1; j++) a += profile[j]; a /= (k2 - k1);
+        if (a < ref - 45) continue;
+        let b = 0; for (let j = i + k1; j < i + k2; j++) b += profile[j]; b /= (k2 - k1);
+        if (a - b > edgeDrop) { edgeDrop = a - b; edgeF = freqs[i]; }
+      }
+    }
+    r.edgeKhz = Math.round(edgeF / 10) / 100;
+
+    // ---- encoder fingerprint (MP3 / AAC / Vorbis) ----
+    r.codec = ""; r.codecConf = ""; r.codecScores = {};
+    if (sr <= 48000 && root.CodecPrint) {
+      const fp = root.CodecPrint.detect(channels[0], nch > 1 ? channels[1] : null, r.effBits || bits || 16,
+        (p) => { if (onProgress) onProgress(0.35 + 0.65 * p); });
+      r.codec = fp.codec || ""; r.codecConf = fp.confidence || "";
+      for (const k in fp.stats) r.codecScores[k] = fp.stats[k].z;
+    }
+
+    // ---- verdicts ----
+    const flags = [];
+    const brick = r.wallDb >= 25;
+    const nearNyq = fc >= Math.min(nyq - 1200, 21000);
+    const hardWall = r.wallDb >= 60 && fc < 21200 && sr <= 48000;
+    const opusEdge = edgeF >= 19600 && edgeF <= 20800 && edgeDrop >= 40 && sr <= 48000;
+
+    if (r.codec) {
+      flags.push("LOSSY TRANSCODE");
+      r.lossyGuess = `${r.codec} (encoder fingerprint found, ${r.codecConf})`;
+      if (fc < 20200 && brick && r.codec === "MP3") r.notes.push(`Cutoff at ${r.cutoffKhz} kHz suggests ${guessLossy(r.cutoffKhz)}.`);
+      else if (fc >= 20200) r.notes.push("No frequency cutoff: a high-bitrate encode that a spectrogram alone would miss.");
+    } else if ((fc < 20200 && brick) || hardWall) {
+      flags.push("LOSSY TRANSCODE"); r.lossyGuess = guessLossy(r.cutoffKhz) + " (from cutoff)";
+      if (sr <= 48000) r.notes.push("No MP3/AAC/Vorbis fingerprint: probably resampled after decoding, or another codec.");
+    } else if (opusEdge) {
+      flags.push("LOSSY TRANSCODE"); r.lossyGuess = "Opus or another lossy codec (hard 20 kHz edge)";
+      r.notes.push(`Content drops ${Math.round(edgeDrop)} dB right at ${r.edgeKhz} kHz. Opus never goes above 20 kHz.`);
+    } else if (fc < 20200) {
+      flags.push("SUSPICIOUS");
+      r.notes.push("Low cutoff but a gradual roll-off and no encoder fingerprint. Likely a dark master; check the spectrogram.");
+    } else if (fc < 21000 && brick && sr <= 48000) {
+      flags.push("SUSPICIOUS");
+      r.notes.push("Sharp cutoff at about 20–21 kHz but no encoder fingerprint. Probably a mastering filter.");
+    }
+
+    if (sr >= 88200 && !flags.includes("LOSSY TRANSCODE")) {
+      if (r.hiresEnergy) flags.push("GENUINE HI-RES");
+      else {
+        let edge = fc;
+        for (let b = 0; b < bins; b++) if (freqs[b] > 15000 && profile[b] < ref - 20) { edge = freqs[b]; break; }
+        const src = edge < 23000 ? "44.1 kHz" : "48 kHz";
+        flags.push(`FAKE HI-RES (upsampled from ${src})`);
+        r.notes.push(`Content falls off at about ${(edge / 1000).toFixed(1)} kHz.`);
+      }
+    }
+    if (bits >= 24 && r.effBits > 0 && r.effBits <= 16) flags.push("FAKE 24-BIT (padded 16-bit)");
+
+    if (!flags.some((f) => /^(LOSSY|SUSPICIOUS|FAKE HI-RES|GENUINE HI-RES)/.test(f))) {
+      flags.unshift("GENUINE LOSSLESS");
+      if (!nearNyq && sr <= 48000)
+        r.notes.push(`Content ends at ${r.cutoffKhz} kHz (limit ${(nyq / 1000).toFixed(1)}). That's a resampling or mastering filter, not lossy compression.`);
+    }
+    if (!flags.includes("LOSSY TRANSCODE") && r.lossyFramesPct >= 5 && fc >= 20200)
+      r.notes.push(`${r.lossyFramesPct}% of loud moments show a low cutoff, likely a lossy sample inside the original production.`);
+
+    r.flags = flags;
+    r.verdict = flags.join(" + ");
+
+    // ---- display data: ≈ 600 frames × 512 bins ----
+    const dstep = Math.max(1, Math.floor(db.length / 600)), dbins = Math.floor((bins - 1) / 4);
+    r.display = [];
+    for (let f = 0; f < db.length; f += dstep) {
+      const row = new Float32Array(dbins);
+      for (let b = 0; b < dbins; b++) row[b] = Math.max(db[f][4 * b], db[f][4 * b + 1], db[f][4 * b + 2], db[f][4 * b + 3]);
+      r.display.push(row);
+    }
+    r.profile = profile; r.freqs = freqs; r.ref = ref;
+    if (onProgress) onProgress(1);
+    return r;
+  }
+
+  /** Read STREAMINFO from a FLAC file (ArrayBuffer). Returns {sr, bits, channels, samples}. */
+  function readFlacInfo(buf) {
+    const u8 = new Uint8Array(buf);
+    let p = 0;
+    // skip ID3v2 tag if present
+    if (u8[0] === 0x49 && u8[1] === 0x44 && u8[2] === 0x33) {
+      const size = (u8[6] << 21) | (u8[7] << 14) | (u8[8] << 7) | u8[9];
+      p = 10 + size;
+    }
+    if (String.fromCharCode(u8[p], u8[p + 1], u8[p + 2], u8[p + 3]) !== "fLaC") return null;
+    const s = p + 8;                           // STREAMINFO body
+    const sr = (u8[s + 10] << 12) | (u8[s + 11] << 4) | (u8[s + 12] >> 4);
+    const channels = ((u8[s + 12] >> 1) & 7) + 1;
+    const bits = (((u8[s + 12] & 1) << 4) | (u8[s + 13] >> 4)) + 1;
+    const samples = (u8[s + 13] & 15) * 2 ** 32 + ((u8[s + 14] << 24) >>> 0) + (u8[s + 15] << 16) + (u8[s + 16] << 8) + u8[s + 17];
+    return { sr, bits, channels, samples };
+  }
+
+  root.FlacAnalysis = { analyse, readFlacInfo, effectiveBits };
+  if (typeof module !== "undefined") module.exports = root.FlacAnalysis;
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const list = $("list"), statusEl = $("status"), bar = $("bar");
+
+  // ---------- worker built from the inline analysis module ----------
+  const workerSrc = $("analysis-src").textContent + `
+    self.onmessage = (e) => {
+      const { id, sr, bits, channels } = e.data;
+      try {
+        const r = FlacAnalysis.analyse({ sr, bits, channels,
+          onProgress: (p) => self.postMessage({ id, progress: p }) });
+        const buffers = r.display.map((row) => row.buffer).concat([r.profile.buffer, r.freqs.buffer]);
+        self.postMessage({ id, result: r }, buffers);
+      } catch (err) { self.postMessage({ id, error: String(err && err.message || err) }); }
+    };`;
+  let worker = null;
+  try { worker = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: "text/javascript" }))); }
+  catch (e) { worker = null; }
+  const pending = new Map();
+  let nextId = 1;
+  if (worker) worker.onmessage = (e) => {
+    const job = pending.get(e.data.id); if (!job) return;
+    if ("progress" in e.data) { job.onProgress && job.onProgress(e.data.progress); return; }
+    pending.delete(e.data.id);
+    e.data.error ? job.reject(new Error(e.data.error)) : job.resolve(e.data.result);
+  };
+  function runAnalysis(sr, bits, channels, onProgress) {
+    if (!worker) {                                  // fallback: main thread
+      return new Promise((res, rej) => setTimeout(() => {
+        try { res(window.FlacAnalysis.analyse({ sr, bits, channels })); } catch (err) { rej(err); }
+      }, 20));
+    }
+    return new Promise((resolve, reject) => {
+      const id = nextId++;
+      pending.set(id, { resolve, reject, onProgress });
+      worker.postMessage({ id, sr, bits, channels }, channels.map((c) => c.buffer));
+    });
+  }
+
+  // ---------- verdict → state ----------
+  function stateOf(v) {
+    if (/^LOSSY/.test(v)) return "bad";
+    if (/^ERROR/.test(v)) return "bad";
+    if (/SUSPICIOUS|FAKE/.test(v)) return "warn";
+    return "ok";
+  }
+  function chipsFor(r) {
+    return r.flags.map((f) => {
+      const s = /^LOSSY/.test(f) ? "bad" : /^GENUINE/.test(f) ? "ok" : "warn";
+      const label = f.replace("LOSSY TRANSCODE", r.codec ? `Lossy · ${r.codec} (fake FLAC)` : "Lossy (fake FLAC)").replace("GENUINE LOSSLESS", "Genuine lossless")
+        .replace("GENUINE HI-RES", "Genuine hi-res").replace("SUSPICIOUS", "Suspicious")
+        .replace(/FAKE HI-RES \(upsampled from (.*)\)/, "Fake hi-res · from $1").replace("FAKE 24-BIT (padded 16-bit)", "Fake 24-bit");
+      return `<span class="chip ${s}">${label}</span>`;
+    }).join("");
+  }
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+
+  // ---------- strip rendering ----------
+  function addStrip(name, isExample) {
+    const d = document.createElement("details");
+    d.className = "strip"; d.dataset.state = "idle";
+    d.innerHTML = `<summary><div class="name">${esc(name)}</div>
+      <div class="meta"><span class="chip idle">Waiting</span></div></summary><div class="detail"></div>`;
+    if (isExample) d.dataset.example = "1";
+    list.appendChild(d);
+    return d;
+  }
+  function fillStrip(d, r, name, isExample, src) {
+    d.dataset.state = stateOf(r.verdict);
+    const fmt = `${r.sr / 1000} kHz · ${r.bits}-bit`;
+    d.querySelector("summary").innerHTML = `
+      <div class="name">${isExample ? '<span class="example-tag">Example</span> ' : ""}${esc(name)}</div>
+      <div class="meta">${src ? '<button class="play-btn" type="button">&#9654; Play</button>' : ""}${chipsFor(r)}<span>${fmt}</span><span>cutoff ${r.cutoffKhz} kHz</span></div>`;
+    const det = d.querySelector(".detail");
+    const notes = r.notes.length ? `<ul class="notes">${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : "";
+    det.innerHTML = `
+      ${src ? '<audio class="player" controls preload="none"></audio><p class="play-error" hidden>This browser can\'t play this file.</p>' : ""}
+      <div class="scope"><div class="scope-in"><canvas width="900" height="480" aria-label="Spectrogram of ${esc(name)}"></canvas><div class="playhead" hidden></div></div></div>
+      <dl class="facts">
+        <div><dt>Format</dt><dd>${fmt}</dd></div>
+        <div><dt>Bits actually used</dt><dd>${r.effBits}</dd></div>
+        <div><dt>Content ends at</dt><dd>${r.cutoffKhz} kHz</dd></div>
+        <div><dt>Cutoff sharpness</dt><dd>${r.wallDb} dB ${r.wallDb >= 60 ? "(brick wall)" : r.wallDb >= 25 ? "(sharp)" : "(natural)"}</dd></div>
+        <div><dt>Length</dt><dd>${fmtTime(r.duration)}</dd></div>
+        ${r.sr <= 48000 ? `<div><dt>Encoder fingerprint</dt><dd>${r.codec ? esc(r.codec) + " found (" + esc(r.codecConf) + ")" : "none found"}</dd></div>` : ""}
+        ${r.lossyGuess ? `<div><dt>Looks like</dt><dd>${esc(r.lossyGuess)}</dd></div>` : ""}
+      </dl>${notes}`;
+    const cv = det.querySelector("canvas");
+    const draw = () => drawScope(cv, r);
+    if (d.open) draw();
+    d.addEventListener("toggle", () => { if (d.open) draw(); });
+    if (src) setupPlayer(d, r, src, cv);
+  }
+
+  // ---------- playback ----------
+  const objectUrls = [];
+  function setupPlayer(d, r, src, cv) {
+    const audio = d.querySelector("audio"), btn = d.querySelector(".play-btn");
+    const line = d.querySelector(".playhead"), err = d.querySelector(".play-error");
+    const g = scopeGeom(cv.width, cv.height);
+    line.style.top = (g.T / g.H * 100) + "%";
+    line.style.height = (g.plotH / g.H * 100) + "%";
+    let loaded = false;
+    const load = () => {
+      if (loaded) return; loaded = true;
+      const url = URL.createObjectURL(src); objectUrls.push(url); audio.src = url;
+    };
+    const dur = () => (isFinite(audio.duration) && audio.duration > 0 ? audio.duration : r.duration);
+    const place = () => {
+      const f = Math.min(1, Math.max(0, audio.currentTime / dur()));
+      line.style.left = ((g.L + f * g.specW) / g.W * 100) + "%";
+      line.hidden = audio.currentTime === 0 && audio.paused;
+    };
+    const tick = () => { place(); if (!audio.paused) requestAnimationFrame(tick); };
+    const playPause = () => {
+      load();
+      if (audio.paused) audio.play().catch(() => {}); else audio.pause();
+    };
+    btn.addEventListener("click", (e) => {        // inside <summary>: don't toggle the box
+      e.preventDefault(); e.stopPropagation();
+      if (!d.open) d.open = true;
+      playPause();
+    });
+    d.addEventListener("toggle", () => { if (d.open) load(); });
+    audio.addEventListener("play", () => {
+      document.querySelectorAll("audio").forEach((a) => { if (a !== audio) a.pause(); });
+      btn.innerHTML = "&#10074;&#10074; Pause"; btn.classList.add("playing"); tick();
+    });
+    const stopped = () => { btn.innerHTML = "&#9654; Play"; btn.classList.remove("playing"); place(); };
+    audio.addEventListener("pause", stopped);
+    audio.addEventListener("ended", stopped);
+    audio.addEventListener("seeked", place);
+    audio.addEventListener("error", () => { if (loaded) { err.hidden = false; btn.disabled = true; } });
+    cv.addEventListener("click", (e) => {          // tap the spectrogram to jump there
+      const box = cv.getBoundingClientRect();
+      const x = (e.clientX - box.left) / box.width * g.W;
+      if (x < g.L || x > g.L + g.specW) return;
+      const t = (x - g.L) / g.specW;
+      load();
+      const go = () => { audio.currentTime = t * dur(); place(); if (audio.paused) audio.play().catch(() => {}); };
+      if (audio.readyState >= 1) go(); else audio.addEventListener("loadedmetadata", go, { once: true });
+    });
+  }
+  function stopAllAudio() { document.querySelectorAll("audio").forEach((a) => a.pause()); }
+  function failStrip(d, name, msg) {
+    d.dataset.state = "bad";
+    d.querySelector("summary").innerHTML = `<div class="name">${esc(name)}</div>
+      <div class="meta"><span class="chip bad">Couldn't read</span></div>`;
+    d.querySelector(".detail").innerHTML = `<p class="hint">${esc(msg)}</p>`;
+  }
+
+  // ---------- spectrogram canvas ----------
+  const STOPS = [[0,0,4],[40,11,84],[101,21,110],[159,42,99],[212,72,66],[245,125,21],[250,193,39],[252,255,164]];
+  const LUT = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255 * (STOPS.length - 1), k = Math.min(STOPS.length - 2, Math.floor(t)), f = t - k;
+    for (let c = 0; c < 3; c++) LUT[i * 3 + c] = STOPS[k][c] + (STOPS[k + 1][c] - STOPS[k][c]) * f;
+  }
+  function scopeGeom(W, H) {
+    const L = 78, B = 46, T = 12, gap = 16;
+    const profW = Math.round((W - L) * 0.22), specW = W - L - profW - gap - 8, plotH = H - B - T;
+    return { W, H, L, B, T, gap, profW, specW, plotH };
+  }
+  function drawScope(cv, r) {
+    const W = cv.width, H = cv.height, ctx = cv.getContext("2d");
+    const { L, B, T, gap, profW, specW, plotH } = scopeGeom(W, H);
+    ctx.fillStyle = "#08070b"; ctx.fillRect(0, 0, W, H);
+    // spectrogram
+    const rows = r.display, nb = rows[0].length;
+    const img = ctx.createImageData(specW, plotH);
+    for (let x = 0; x < specW; x++) {
+      const row = rows[Math.min(rows.length - 1, Math.floor(x / specW * rows.length))];
+      for (let y = 0; y < plotH; y++) {
+        const b = Math.min(nb - 1, Math.floor((plotH - 1 - y) / plotH * nb));
+        const v = Math.max(0, Math.min(255, Math.round((row[b] + 120) / 120 * 255)));
+        const o = (y * specW + x) * 4;
+        img.data[o] = LUT[v * 3]; img.data[o + 1] = LUT[v * 3 + 1]; img.data[o + 2] = LUT[v * 3 + 2]; img.data[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, L, T);
+    const nyqK = r.sr / 2000, yOf = (k) => T + plotH - k / nyqK * plotH;
+    // axes text
+    ctx.font = "30px 'JetBrains Mono', monospace"; ctx.fillStyle = "#b9b2bd"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    const stepK = nyqK > 30 ? 8 : 4;
+    for (let k = 0; k <= nyqK + 0.01; k += stepK) {
+      ctx.fillText(String(k), L - 8, yOf(k));
+      ctx.fillStyle = "rgba(255,255,255,0.08)"; ctx.fillRect(L, Math.round(yOf(k)), specW, 1); ctx.fillStyle = "#b9b2bd";
+    }
+    ctx.save(); ctx.translate(16, T + plotH / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText("kHz", 0, 0); ctx.restore();
+    ctx.textAlign = "left"; ctx.textBaseline = "top";
+    ctx.fillText("0:00", L, T + plotH + 8);
+    ctx.textAlign = "right"; ctx.fillText(fmtTime(r.duration), L + specW, T + plotH + 8);
+    // profile panel
+    const px = L + specW + gap;
+    ctx.fillStyle = "#121016"; ctx.fillRect(px, T, profW, plotH);
+    const dbMin = -170, dbMax = -10, xOf = (db) => px + (Math.max(dbMin, Math.min(dbMax, db)) - dbMin) / (dbMax - dbMin) * profW;
+    ctx.strokeStyle = "#f5a623"; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (let b = 0; b < r.profile.length; b++) {
+      const x = xOf(r.profile[b]), y = yOf(r.freqs[b] / 1000);
+      b ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+    ctx.textAlign = "center"; ctx.fillStyle = "#b9b2bd"; ctx.fillText("level", px + profW / 2, T + plotH + 8);
+    // cutoff line
+    ctx.setLineDash([10, 8]); ctx.strokeStyle = "#5ee6f0"; ctx.lineWidth = 2;
+    const yc = Math.round(yOf(r.cutoffKhz)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(L, yc); ctx.lineTo(px + profW, yc); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#5ee6f0"; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+    ctx.fillText(`${r.cutoffKhz} kHz`, L + 8, Math.max(T + 34, yc - 6));
+  }
+
+  // ---------- summary ----------
+  const results = [];
+  function updateSummary() {
+    const own = results.filter((x) => !x.example);
+    if (!own.length) { $("summary").innerHTML = ""; return; }
+    const c = { ok: 0, warn: 0, bad: 0 };
+    own.forEach((x) => c[x.state]++);
+    $("summary").innerHTML =
+      `<span class="chip idle">${own.length} checked</span>` +
+      (c.ok ? `<span class="chip ok">${c.ok} genuine</span>` : "") +
+      (c.warn ? `<span class="chip warn">${c.warn} fake hi-res / suspicious</span>` : "") +
+      (c.bad ? `<span class="chip bad">${c.bad} lossy / unreadable</span>` : "");
+  }
+
+  // ---------- decoding ----------
+  async function decodeFile(file) {
+    const buf = await file.arrayBuffer();
+    const info = window.FlacAnalysis.readFlacInfo(buf.slice(0, 1 << 20));
+    if (!info) throw new Error("This isn't a FLAC file, or its header is damaged.");
+    const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const ctx = new Ctx(info.channels, 1, info.sr);   // same rate as the file: no resampling
+    const audio = await ctx.decodeAudioData(buf);
+    if (audio.sampleRate !== info.sr) throw new Error("This browser resampled the file, so it can't be checked accurately. Try Chrome.");
+    const channels = [];
+    for (let c = 0; c < audio.numberOfChannels; c++) channels.push(audio.getChannelData(c).slice());
+    return { info, channels };
+  }
+
+  // ---------- queue ----------
+  let busy = false; const queue = [];
+  async function pump() {
+    if (busy) return; busy = true; $("pick").disabled = false;
+    let done = 0;
+    while (queue.length) {
+      const { file, strip } = queue.shift(); done++;
+      const total = done + queue.length;
+      strip.querySelector(".meta").innerHTML = `<span class="chip idle">Decoding…</span>`;
+      statusEl.textContent = `Checking ${done} of ${total}: ${file.name}`;
+      const base = (done - 1) / total;
+      bar.style.width = `${base * 100}%`;
+      try {
+        const { info, channels } = await decodeFile(file);
+        strip.querySelector(".meta").innerHTML = `<span class="chip idle">Analysing…</span>`;
+        const r = await runAnalysis(info.sr, info.bits, channels,
+          (p) => { bar.style.width = `${(base + p / total) * 100}%`; });
+        fillStrip(strip, r, file.name, false, file);
+        results.push({ state: stateOf(r.verdict) });
+      } catch (err) {
+        failStrip(strip, file.name, err.message || String(err));
+        results.push({ state: "bad" });
+      }
+      updateSummary();
+    }
+    bar.style.width = "100%";
+    const own = results.filter((x) => !x.example).length;
+    statusEl.textContent = `Done. ${own} file${own === 1 ? "" : "s"} checked. Tap a result to see its spectrogram.`;
+    $("clear").hidden = false;
+    busy = false;
+  }
+  function addFiles(files) {
+    const flacs = [...files];
+    if (!flacs.length) return;
+    list.querySelectorAll('[data-example="1"]').forEach((n) => { n.querySelectorAll("audio").forEach((a) => a.pause()); n.remove(); });
+    for (let i = results.length - 1; i >= 0; i--) if (results[i].example) results.splice(i, 1);
+    flacs.forEach((file) => queue.push({ file, strip: addStrip(file.name) }));
+    pump();
+  }
+
+  $("pick").addEventListener("click", () => $("file").click());
+  $("file").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+  $("clear").addEventListener("click", () => {
+    if (busy) return;
+    stopAllAudio(); objectUrls.splice(0).forEach((u) => URL.revokeObjectURL(u));
+    list.innerHTML = ""; results.length = 0; updateSummary();
+    bar.style.width = "0"; statusEl.textContent = "Cleared. Choose files to check."; $("clear").hidden = true;
+  });
+  const loader = $("loader");
+  ["dragenter", "dragover"].forEach((t) => loader.addEventListener(t, (e) => { e.preventDefault(); loader.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((t) => loader.addEventListener(t, (e) => { e.preventDefault(); loader.classList.remove("drag"); }));
+  loader.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+
+  // ---------- example: synthetic AAC-style file with NO frequency cutoff ----------
+  // Built like an AAC decoder does it: quantised MDCT coefficients (many exactly
+  // zero), sine window, 1024-sample hop, then rounded to 16-bit. A spectrogram
+  // shows nothing wrong; the encoder fingerprint does.
+  function makeExample() {
+    const sr = 44100, N = 1024, M = 2 * N, frames = 860, out = new Float64Array(N * (frames + 1));
+    const re = new Float64Array(M), im = new Float64Array(M), win = new Float64Array(M);
+    for (let n = 0; n < M; n++) win[n] = Math.sin(Math.PI * (n + 0.5) / M);
+    let seed = 11;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+    const n0 = 0.5 + N / 2;
+    for (let f = 0; f < frames; f++) {
+      const beat = (f % 22) < 4 ? 1 : 0.35;                      // simple rhythm
+      for (let k = 0; k < M; k++) { re[k] = 0; im[k] = 0; }
+      for (let k = 1; k < N; k++) {
+        const g = beat / Math.sqrt(k + 2) + (k % 47 === 3 ? 0.4 : 0);   // 1/f noise + a few tones
+        const step = k < 100 ? 0.05 * g : 0.85 * g;                   // coarse steps up high -> zeros
+        const q = Math.round(g * gauss() / step) * step;
+        const ph = Math.PI * n0 * k / N;
+        re[k] = q * Math.cos(ph); im[k] = -q * Math.sin(ph);           // conj(Z)
+      }
+      fftLocal(re, im);                                             // FFT(conj Z) = conj(IFFT-sum)
+      for (let n = 0; n < M; n++) {
+        const sr_ = re[n], si = -im[n], a = Math.PI * (n + n0) / M;
+        const y = sr_ * Math.cos(a) - si * Math.sin(a);
+        out[f * N + n] += y * win[n];
+      }
+    }
+    let peak = 0; for (const v of out) peak = Math.max(peak, Math.abs(v));
+    const ch = new Float32Array(out.length);
+    for (let i = 0; i < out.length; i++) ch[i] = Math.round(out[i] / peak * 0.8 * 32767) / 32768;
+    return { sr, bits: 16, channels: [ch, ch.slice()] };
+  }
+  function toWav(chs, sr) {      // 16-bit PCM WAV blob so the example can be played
+    const n = chs[0].length, nc = chs.length, buf = new ArrayBuffer(44 + n * nc * 2), v = new DataView(buf);
+    const str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+    str(0, "RIFF"); v.setUint32(4, 36 + n * nc * 2, true); str(8, "WAVEfmt "); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, nc, true); v.setUint32(24, sr, true); v.setUint32(28, sr * nc * 2, true);
+    v.setUint16(32, nc * 2, true); v.setUint16(34, 16, true); str(36, "data"); v.setUint32(40, n * nc * 2, true);
+    let o = 44;
+    for (let i = 0; i < n; i++) for (let c = 0; c < nc; c++) { v.setInt16(o, Math.max(-32768, Math.min(32767, Math.round(chs[c][i] * 32768))), true); o += 2; }
+    return new Blob([buf], { type: "audio/wav" });
+  }
+  function fftLocal(re, im) {   // radix-2 forward FFT (main-thread copy)
+    const n = re.length, lv = Math.log2(n);
+    for (let i = 0; i < n; i++) { let r = 0, x = i; for (let b = 0; b < lv; b++) { r = (r << 1) | (x & 1); x >>= 1; }
+      if (r > i) { let t = re[i]; re[i] = re[r]; re[r] = t; t = im[i]; im[i] = im[r]; im[r] = t; } }
+    for (let s = 2; s <= n; s <<= 1) { const h = s >> 1, a0 = -2 * Math.PI / s;
+      for (let i = 0; i < n; i += s) for (let j = 0; j < h; j++) {
+        const c = Math.cos(a0 * j), si = Math.sin(a0 * j), a = i + j, b = a + h;
+        const tr = re[b] * c - im[b] * si, ti = re[b] * si + im[b] * c;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti; } }
+  }
+  (async () => {
+    const name = "AAC 256 kbps saved as .flac (no cutoff)";
+    const strip = addStrip(name, true);
+    try {
+      const ex = makeExample();
+      const wav = toWav(ex.channels, ex.sr);
+      const r = await runAnalysis(ex.sr, ex.bits, ex.channels);
+      fillStrip(strip, r, name, true, wav);
+      strip.open = true; drawScope(strip.querySelector("canvas"), r);
+      results.push({ state: stateOf(r.verdict), example: true });
+    } catch (e) { strip.remove(); }
+  })();
+})();
+</script>
+
+</body>
+</html>

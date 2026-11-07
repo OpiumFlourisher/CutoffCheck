@@ -1,0 +1,58 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Version comes from the release tag in CI (v1.2.0 -> 1.2.0); run number -> versionCode.
+def appVersionName = project.findProperty('appVersionName') ?: '1.2.0'
+def appVersionCode = (project.findProperty('appVersionCode') ?: '1').toInteger()
+
+// Release signing: set these four environment variables (GitHub secrets in CI).
+def ksPath = System.getenv('CUTOFFCHECK_KEYSTORE')
+def haveKeystore = ksPath != null && new File(ksPath).exists()
+
+android {
+    namespace 'com.cutoffcheck.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.cutoffcheck.app'
+        minSdk 26
+        targetSdk 34
+        versionCode appVersionCode
+        versionName appVersionName
+    }
+
+    signingConfigs {
+        if (haveKeystore) {
+            release {
+                storeFile file(ksPath)
+                storePassword System.getenv('CUTOFFCHECK_STORE_PASSWORD')
+                keyAlias System.getenv('CUTOFFCHECK_KEY_ALIAS')
+                keyPassword System.getenv('CUTOFFCHECK_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Without a keystore the APK is signed with the debug key so it still installs,
+            // but such builds can't be installed over each other as updates.
+            signingConfig haveKeystore ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    androidResources {
+        noCompress 'html', 'ttf'
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
