@@ -1,19 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- CutoffCheck vinyl logo, scaled into the adaptive-icon safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:strokeColor="#7b2cbf" android:strokeWidth="4.5" android:strokeLineCap="round"
-        android:pathData="M31.88,51.00 L31.88,57.00" />
-    <path android:strokeColor="#b5179e" android:strokeWidth="4.5" android:strokeLineCap="round"
-        android:pathData="M39.38,42.00 L39.38,66.00" />
-    <path android:strokeColor="#f72585" android:strokeWidth="4.5" android:strokeLineCap="round"
-        android:pathData="M46.88,34.50 L46.88,73.50" />
-    <path android:strokeColor="#ff6d00" android:strokeWidth="4.5" android:strokeLineCap="round"
-        android:pathData="M54.38,45.00 L54.38,63.00" />
-    <path android:strokeColor="#ff9e00" android:strokeWidth="4.5" android:strokeLineCap="round"
-        android:pathData="M61.88,37.50 L61.88,70.50" />
-    <path android:strokeColor="#ffd60a" android:strokeWidth="4.5" android:strokeLineCap="round"
-        android:pathData="M69.38,48.00 L69.38,60.00" />
-    <path android:strokeColor="#fff3b0" android:strokeWidth="4.5" android:strokeLineCap="round"
-        android:pathData="M76.12,52.50 L76.12,55.50" />
+    <group android:translateX="23.60" android:translateY="23.60" android:scaleX="0.95" android:scaleY="0.95">
+        <path
+            android:pathData="M3 34 a27 27 0 1 0 54 0 a27 27 0 1 0 -54 0 Z"
+            android:fillColor="#0e0e11"
+            android:strokeColor="#c9ccd3"
+            android:strokeWidth="2.2" />
+        <path
+            android:pathData="M7 34 a23 23 0 1 0 46 0 a23 23 0 1 0 -46 0 Z"
+            android:strokeColor="#2c2c33"
+            android:strokeWidth="1.2" />
+        <path
+            android:pathData="M10.5 34 a19.5 19.5 0 1 0 39 0 a19.5 19.5 0 1 0 -39 0 Z"
+            android:strokeColor="#2c2c33"
+            android:strokeWidth="1.2" />
+        <path
+            android:pathData="M14 34 a16 16 0 1 0 32 0 a16 16 0 1 0 -32 0 Z"
+            android:strokeColor="#2c2c33"
+            android:strokeWidth="1.2" />
+        <path
+            android:pathData="M10.27 26.82 A21 21 0 0 1 24.56 13.72"
+            android:strokeColor="#8a8e98"
+            android:strokeWidth="1.6"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M46.44 39.99 A17.5 17.5 0 0 1 35.99 50.44"
+            android:strokeColor="#5a5d66"
+            android:strokeWidth="1.4"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M20 34 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0 Z"
+            android:fillColor="#c1121f" />
+        <path
+            android:pathData="M22.6 34 a7.4 7.4 0 1 0 14.8 0 a7.4 7.4 0 1 0 -14.8 0 Z"
+            android:strokeColor="#ff4555"
+            android:strokeWidth="0.9" />
+        <path
+            android:pathData="M28.1 34 a1.9 1.9 0 1 0 3.8 0 a1.9 1.9 0 1 0 -3.8 0 Z"
+            android:fillColor="#e6e8ec" />
+        <path
+            android:pathData="M54 8 L57 30 L44 42"
+            android:strokeColor="#c9ccd3"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M41.5 38.5 L47 44 L44 47 L38.5 41.5 Z"
+            android:fillColor="#e6e8ec"
+            android:strokeColor="#6b6e76"
+            android:strokeWidth="1"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M49.6 8 a4.4 4.4 0 1 0 8.8 0 a4.4 4.4 0 1 0 -8.8 0 Z"
+            android:fillColor="#9da1aa"
+            android:strokeColor="#3a3b41"
+            android:strokeWidth="1.2" />
+        <path
+            android:pathData="M52.4 8 a1.6 1.6 0 1 0 3.2 0 a1.6 1.6 0 1 0 -3.2 0 Z"
+            android:fillColor="#ff2a3d" />
+    </group>
 </vector>

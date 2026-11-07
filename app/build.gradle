@@ -3,7 +3,7 @@ plugins {
 }
 
 // Version comes from the release tag in CI (v1.2.0 -> 1.2.0); run number -> versionCode.
-def appVersionName = project.findProperty('appVersionName') ?: '1.3.0'
+def appVersionName = project.findProperty('appVersionName') ?: '1.4.0'
 // GitHub repo the in-app update check looks at (CI passes the real one).
 def updateRepo = project.findProperty('updateRepo') ?: 'OpiumFlourisher/CutoffCheck'
 def appVersionCode = (project.findProperty('appVersionCode') ?: '1').toInteger()

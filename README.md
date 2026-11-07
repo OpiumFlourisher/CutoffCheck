@@ -67,4 +67,4 @@ Every push and every `v*` tag is built automatically by GitHub Actions (`.github
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). The bundled font Patrick Hand is under the SIL Open Font License.
+MIT, see [LICENSE](LICENSE). The bundled fonts (Grenze Gotisch, Cinzel, EB Garamond) are under the SIL Open Font License.

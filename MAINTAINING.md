@@ -39,7 +39,7 @@ For this to work:
 
 People on v1.2.0 don't have the update banner yet, so they need to install v1.3.0 by hand once.
 
-The version shown in the app comes from the release tag automatically. The web version's label is written in `web/template.html` (`v1.3`), so bump that if you publish the web page too.
+The version shown in the app comes from the release tag automatically. The web version's label is written in `web/template.html` (`v1.4`), so bump that if you publish the web page too.
 
 ## If the build fails
 

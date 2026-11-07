@@ -36,12 +36,14 @@ def main():
     app = app.replace(font_links, "")
     app = app.replace('<meta name="claude:viewport-fit-sides" content="cover">\n', "")
     app = app.replace("<style>", """<style>
-@font-face { font-family: "Patrick Hand"; src: url("fonts/PatrickHand-Regular.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Grenze Gotisch"; font-weight: 100 900; src: url("fonts/GrenzeGotisch.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Cinzel"; font-weight: 400 900; src: url("fonts/Cinzel.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "EB Garamond"; font-weight: 400 800; src: url("fonts/EBGaramond.ttf") format("truetype"); font-display: swap; }
 [hidden] { display: none !important; }
 html, body { margin: 0; }""", 1)
     swaps = [
-        ('<div class="note">tip: in Chrome tap &#8942; &rarr; <b>Add to Home screen</b> and it opens like a normal app :)</div>',
-         '<div class="note">tip: tap anywhere on a <b>spectrogram</b> to jump to that part of the song :)</div>'),
+        ('<div class="tip"><span class="tip-label">Tip:</span> in Chrome tap &#8942; &rarr; <b>Add to Home screen</b> and it opens like a real app.</div>',
+         '<div class="tip"><span class="tip-label">Tip:</span> tap anywhere on a <b>spectrogram</b> to jump to that part of the song.</div>'),
         ("<p>Once the page has loaded, yes. Your songs never leave the phone either way.</p>",
          "<p>Yes. The only time the app goes online is to ask GitHub whether a newer version exists, and you can turn that off in App settings. The part that reads your songs has no network access at all.</p>"),
         ("works best in Chrome on Android", "Android app"),
