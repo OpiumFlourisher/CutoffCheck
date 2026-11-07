@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -15,8 +17,12 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 /**
@@ -25,20 +31,32 @@ import java.util.Collections;
  *
  * The page is served from a fixed https address that never touches the network, so
  * workers, blob URLs and audio decoding behave exactly like in Chrome. Anything not
- * in the assets folder gets a 404, and the app has no INTERNET permission at all.
+ * in the assets folder gets a 404: the page that reads your songs can't go online.
+ *
+ * The only network access is the update check below, done in Java: it downloads the
+ * latest-release info from the GitHub API and passes it to the page, which shows a
+ * banner if there's a newer version. It can be turned off in App settings.
  */
 public class MainActivity extends Activity {
 
     private static final String HOST = "appassets.androidplatform.net";
     private static final String START_URL = "https://" + HOST + "/index.html";
     private static final int PICK_FILES = 1;
+    private static final long CHECK_EVERY_MS = 6L * 60 * 60 * 1000;   // reuse a result for 6 hours
+    private static final String PREF_CHECK = "update_check";
+    private static final String PREF_LAST = "update_last_check";
+    private static final String PREF_JSON = "update_last_json";
 
     private WebView webView;
     private ValueCallback<Uri[]> pendingPick;
+    private SharedPreferences prefs;
+    private volatile String updateJson = "";
+    private volatile String updateState = "idle";   // idle | pending | ok | error | off
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        prefs = getSharedPreferences("cutoffcheck", MODE_PRIVATE);
         webView = new WebView(this);
         setContentView(webView);
 
@@ -86,10 +104,120 @@ public class MainActivity extends Activity {
             }
         });
 
+        webView.addJavascriptInterface(new AppBridge(), "CutoffApp");
+
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
             webView.loadUrl(START_URL);
+        }
+
+        if (prefs.getBoolean(PREF_CHECK, true)) checkForUpdate(false);
+        else updateState = "off";
+    }
+
+    // ------------------------------------------------------------------ updates
+    private void checkForUpdate(boolean force) {
+        String cached = prefs.getString(PREF_JSON, "");
+        long last = prefs.getLong(PREF_LAST, 0);
+        if (!force && !cached.isEmpty() && System.currentTimeMillis() - last < CHECK_EVERY_MS) {
+            updateJson = cached;
+            updateState = "ok";
+            notifyPage();
+            return;
+        }
+        updateState = "pending";
+        new Thread(() -> {
+            String json = fetchLatestRelease();
+            if (json != null) {
+                updateJson = json;
+                updateState = "ok";
+                prefs.edit().putLong(PREF_LAST, System.currentTimeMillis()).putString(PREF_JSON, json).apply();
+            } else {
+                updateState = "error";
+            }
+            runOnUiThread(this::notifyPage);
+        }, "update-check").start();
+    }
+
+    private static String fetchLatestRelease() {
+        HttpURLConnection c = null;
+        try {
+            URL url = new URL("https://api.github.com/repos/" + BuildConfig.UPDATE_REPO + "/releases/latest");
+            c = (HttpURLConnection) url.openConnection();
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(8000);
+            c.setRequestProperty("Accept", "application/vnd.github+json");
+            c.setRequestProperty("User-Agent", "CutoffCheck-Android");
+            if (c.getResponseCode() != 200) return null;
+            try (InputStream in = c.getInputStream()) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = in.read(buf)) != -1) {
+                    out.write(buf, 0, n);
+                    if (out.size() > 2_000_000) return null;   // release info is a few KB
+                }
+                return new String(out.toByteArray(), StandardCharsets.UTF_8);
+            }
+        } catch (IOException | RuntimeException e) {
+            return null;
+        } finally {
+            if (c != null) c.disconnect();
+        }
+    }
+
+    private void notifyPage() {
+        if (webView != null) {
+            webView.evaluateJavascript("window.cutoffUpdateReady && window.cutoffUpdateReady()", null);
+        }
+    }
+
+    private static boolean isGithubLink(Uri u) {
+        String host = u.getHost();
+        return "https".equals(u.getScheme()) && host != null
+                && (host.equals("github.com") || host.endsWith(".github.com")
+                    || host.endsWith(".githubusercontent.com"));
+    }
+
+    /** Methods the page can call as window.CutoffApp.*(). They run on a background thread. */
+    public class AppBridge {
+        @JavascriptInterface
+        public String version() { return BuildConfig.VERSION_NAME; }
+
+        @JavascriptInterface
+        public String updateState() { return updateState; }
+
+        @JavascriptInterface
+        public String updateJson() { return updateJson; }
+
+        @JavascriptInterface
+        public boolean isUpdateCheckOn() { return prefs.getBoolean(PREF_CHECK, true); }
+
+        @JavascriptInterface
+        public void setUpdateCheck(boolean on) {
+            prefs.edit().putBoolean(PREF_CHECK, on).apply();
+            if (!on) {
+                updateJson = "";
+                updateState = "off";
+            }
+        }
+
+        @JavascriptInterface
+        public void checkNow() { runOnUiThread(() -> checkForUpdate(true)); }
+
+        /** Opens a GitHub link (the new APK or the release page) in the browser. */
+        @JavascriptInterface
+        public void openDownload(String link) {
+            final Uri u = Uri.parse(link);
+            if (!isGithubLink(u)) return;
+            runOnUiThread(() -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, u));
+                } catch (ActivityNotFoundException ignored) {
+                    // no browser installed: nothing sensible to do
+                }
+            });
         }
     }
 

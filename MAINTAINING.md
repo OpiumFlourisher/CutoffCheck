@@ -27,6 +27,20 @@
 
 Use a higher number for each release (`v1.2.1`, `v1.3.0`...). Every build (including pushes to `main`) also uploads the APK under *Actions → the run → Artifacts*, which is handy for testing before you publish.
 
+## How users get updates (v1.3.0 and later)
+
+When the app opens it asks GitHub for your latest release (at most every 6 hours). If that release's version is higher than the installed one, it shows an **Update available** banner with a button that downloads the new APK. So shipping an update is just: publish a new release with a higher tag.
+
+For this to work:
+- **The repo must be public**, or GitHub won't tell the app about releases.
+- **Every APK must be signed with the same key** (the four secrets). Otherwise Android refuses to install it over the old version.
+- **Tags must go up**: `v1.3.0` → `v1.3.1` → `v1.4.0`. Only releases are announced; pre-releases and drafts are ignored.
+- Builds from the *Actions* tab (not releases) are labelled "dev build". Uninstall a dev build before installing a release, because a dev build can have a higher internal version number than the release.
+
+People on v1.2.0 don't have the update banner yet, so they need to install v1.3.0 by hand once.
+
+The version shown in the app comes from the release tag automatically. The web version's label is written in `web/template.html` (`v1.3`), so bump that if you publish the web page too.
+
 ## If the build fails
 
 Open *Actions*, click the failed run and read the red step. The usual causes are a mistyped secret, or a missing secret (in which case the APK is still built, but signed with a throwaway key; the log shows a warning).

@@ -129,6 +129,22 @@ th { background-color: #dde9fb; color: #1f3d66; }
 .box.faq h2 { color: #0c7f78; }
 .box.issues-box { border-top: 5px solid #f08c00; }
 .box.issues-box h2 { color: #c26c00; }
+.update-bar {
+  background-color: #e7f1ff; border: 2px solid #4d8fdb; border-radius: 6px;
+  padding: 10px 12px; margin: 14px 0 4px 0;
+}
+.update-bar b { color: #0b4f9c; }
+.update-bar .row { justify-content: flex-start; margin-top: 8px; }
+.update-bar .btn { padding: 8px 14px; min-height: 40px; font-size: 15px; }
+.update-bar a { color: #0b4f9c; font-size: 14px; align-self: center; }
+.box.settings { border-top: 5px solid #0066cc; }
+.box.settings h2 { color: #0b4f9c; }
+.box.settings label { display: flex; gap: 10px; align-items: center; font-size: 15px; cursor: pointer; }
+.box.settings input[type=checkbox] { width: 20px; height: 20px; accent-color: #0066cc; }
+.box.settings p { margin: 8px 0 0 0; font-size: 13px; color: #555555; }
+.box.settings .row { justify-content: flex-start; margin-top: 10px; }
+.box.settings .btn { padding: 8px 14px; min-height: 40px; font-size: 14px; }
+.update-status { font-size: 14px; color: #333333; align-self: center; }
 .box.disclaimer { border-top: 5px solid #6b7280; background-color: #f8f9fb; }
 .box.disclaimer h2 { color: #4b5563; }
 .box.disclaimer .issues { font-size: 13px; color: #555555; }
@@ -157,9 +173,18 @@ footer::before { content: ""; display: block; height: 4px; margin: 0 auto 10px a
         <line x1="38.5" y1="22" x2="38.5" y2="24" stroke="#fff3b0"/>
       </g>
     </svg>
-    <h1>Cutoff<span class="h-or">Check</span> <span class="ver">v1.2</span></h1>
+    <h1>Cutoff<span class="h-or">Check</span> <span class="ver" id="ver-label">v1.3</span></h1>
   </div>
   <p class="subtitle">I kept downloading "lossless" albums that turned out to be MP3s with a .flac name, so I made this. It checks if a FLAC is really lossless, fake hi-res or a converted MP3/AAC. <span class="hl">Everything stays on your phone, nothing gets uploaded.</span></p>
+
+  <div class="update-bar" id="update-bar" hidden role="status">
+    <b>Update available:</b> <span id="update-text"></span>
+    <div class="row">
+      <button class="btn" id="update-get" type="button">Download update</button>
+      <button class="btn ghost" id="update-later" type="button">Not now</button>
+      <a id="update-notes" href="#">What's new</a>
+    </div>
+  </div>
 
   <div class="note">tip: tap anywhere on a <b>spectrogram</b> to jump to that part of the song :)</div>
   <hr>
@@ -209,7 +234,7 @@ footer::before { content: ""; display: block; height: 4px; margin: 0 auto 10px a
     </details>
     <details>
       <summary>Does it work offline?</summary>
-      <p>Yes, completely. The app doesn't even have internet permission, so your songs can't leave the phone.</p>
+      <p>Yes. The only time the app goes online is to ask GitHub whether a newer version exists, and you can turn that off in App settings. The part that reads your songs has no network access at all.</p>
     </details>
   </div>
 
@@ -223,6 +248,16 @@ footer::before { content: ""; display: block; height: 4px; margin: 0 auto 10px a
     </ul>
   </div>
 
+  <div class="box settings" id="app-settings" hidden>
+    <h2>App settings</h2>
+    <label><input type="checkbox" id="update-toggle"> Check for updates when the app opens</label>
+    <p>Installed version: <span id="app-version"></span>. The update check only asks GitHub for the number of the latest release. Your songs never leave the phone.</p>
+    <div class="row">
+      <button class="btn ghost" id="update-now" type="button">Check now</button>
+      <span class="update-status" id="update-status"></span>
+    </div>
+  </div>
+
   <div class="box disclaimer">
     <h2>Disclaimer</h2>
     <ul class="issues">
@@ -233,7 +268,7 @@ footer::before { content: ""; display: block; height: 4px; margin: 0 auto 10px a
   </div>
 
   <footer>
-    <p>CutoffCheck v1.2 &middot; Android app</p>
+    <p><span id="ver-footer">CutoffCheck v1.3</span> &middot; Android app</p>
   </footer>
 </main>
 
@@ -1168,6 +1203,81 @@ footer::before { content: ""; display: block; height: 4px; margin: 0 auto 10px a
       results.push({ state: stateOf(r.verdict), example: true });
     } catch (e) { strip.remove(); }
   })();
+})();
+</script>
+<script>
+/* App-only: update banner and settings. Does nothing in the web version.
+   The page never touches the network: the Android app (MainActivity) fetches the
+   latest release info from GitHub and hands it over through window.CutoffApp. */
+(() => {
+  "use strict";
+  const app = window.CutoffApp;
+  if (!app) return;
+  const $ = (id) => document.getElementById(id);
+  const call = (fn, ...a) => { try { return app[fn](...a); } catch (e) { return null; } };
+
+  const installed = String(call("version") || "");
+  const parse = (v) => {
+    const m = String(v || "").replace(/^v/i, "").match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
+    return m ? [+m[1], +m[2], +(m[3] || 0)] : null;
+  };
+  const newer = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) return a[i] > b[i]; } return false; };
+
+  // version labels
+  const mine = parse(installed);
+  const label = mine && !/dev/i.test(installed) ? "v" + mine.join(".") : "dev build";
+  $("ver-label").textContent = label;
+  $("ver-footer").textContent = "CutoffCheck " + label;
+  $("app-version").textContent = installed || "unknown";
+
+  // settings
+  $("app-settings").hidden = false;
+  const toggle = $("update-toggle");
+  toggle.checked = call("isUpdateCheckOn") !== false;
+  toggle.addEventListener("change", () => {
+    call("setUpdateCheck", toggle.checked);
+    if (!toggle.checked) { $("update-bar").hidden = true; $("update-status").textContent = "Update checks are off."; }
+    else { $("update-status").textContent = "Checking…"; manual = true; call("checkNow"); }
+  });
+
+  let manual = false, dismissed = false, target = "", notes = "";
+  $("update-now").addEventListener("click", () => {
+    manual = true; dismissed = false;
+    $("update-status").textContent = "Checking…";
+    call("checkNow");
+  });
+  $("update-later").addEventListener("click", () => { dismissed = true; $("update-bar").hidden = true; });
+  $("update-get").addEventListener("click", () => { if (target) call("openDownload", target); });
+  $("update-notes").addEventListener("click", (e) => { e.preventDefault(); if (notes) call("openDownload", notes); });
+
+  window.cutoffUpdateReady = () => {
+    const state = call("updateState");
+    if (state === "pending") return;
+    if (state === "error") {
+      if (manual) $("update-status").textContent = "Couldn't reach GitHub. Check your connection and try again.";
+      manual = false; return;
+    }
+    if (state !== "ok") { manual = false; return; }
+    let rel = null;
+    try { rel = JSON.parse(call("updateJson") || "null"); } catch (e) { rel = null; }
+    const latest = rel && parse(rel.tag_name);
+    if (!latest) { if (manual) $("update-status").textContent = "Couldn't read the release info."; manual = false; return; }
+    const apk = (rel.assets || []).find((a) => /\.apk$/i.test(a.name || ""));
+    notes = rel.html_url || "";
+    target = (apk && apk.browser_download_url) || notes;
+    const isNewer = !mine || newer(latest, mine);
+    if (isNewer && target) {
+      $("update-text").textContent = `CutoffCheck v${latest.join(".")} (you have ${label}).`;
+      $("update-notes").hidden = !notes;
+      if (!dismissed) $("update-bar").hidden = false;
+      $("update-status").textContent = `v${latest.join(".")} is available.`;
+    } else {
+      $("update-bar").hidden = true;
+      if (manual) $("update-status").textContent = "You're on the latest version.";
+    }
+    manual = false;
+  };
+  window.cutoffUpdateReady();   // in case the check finished before the page loaded
 })();
 </script>
 

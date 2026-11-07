@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- No INTERNET permission on purpose: songs are analysed on the phone and can't be uploaded. -->
+<!-- INTERNET is used only by the update check in MainActivity (GitHub release info).
+     The page that reads songs is served from inside the APK and can't reach the network. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="false"

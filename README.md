@@ -35,7 +35,13 @@ You also get a spectrogram for every song, and you can play the song with a line
 
 ## Privacy
 
-Everything happens on your phone. The app has **no internet permission**, so your music can't be uploaded anywhere.
+Your songs never leave your phone. The screen that reads and analyses them is built into the app and has no network access at all.
+
+The only thing the app ever connects to is GitHub, once when it opens, to ask for the version number of the latest release. If there's a newer one, you'll see an **Update available** banner. You can turn this off in **App settings** at the bottom of the app.
+
+## Updates
+
+When a new version is out, tap **Download update** on the banner, open the downloaded APK and tap **Update**. Your settings are kept.
 
 ## Known issues
 

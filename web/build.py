@@ -43,7 +43,7 @@ html, body { margin: 0; }""", 1)
         ('<div class="note">tip: in Chrome tap &#8942; &rarr; <b>Add to Home screen</b> and it opens like a normal app :)</div>',
          '<div class="note">tip: tap anywhere on a <b>spectrogram</b> to jump to that part of the song :)</div>'),
         ("<p>Once the page has loaded, yes. Your songs never leave the phone either way.</p>",
-         "<p>Yes, completely. The app doesn't even have internet permission, so your songs can't leave the phone.</p>"),
+         "<p>Yes. The only time the app goes online is to ask GitHub whether a newer version exists, and you can turn that off in App settings. The part that reads your songs has no network access at all.</p>"),
         ("works best in Chrome on Android", "Android app"),
     ]
     for a, b in swaps:
